@@ -112,3 +112,66 @@ Extra JSON:
   "agent_token": "scb-airflowagent-.....",
   "verify_ssl": false
 }
+
+
+Agent Setup:
+
+dnf install -y python3 tmux openssl
+
+mkdir -p /opt/airflow_agent/certs  /opt/airflow_agent/log /opt/airflow_agent/jobs
+
+
+/opt/airflow_agent/config.xml 
+
+
+token: "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+# Only these IPs can talk to the agent (after mTLS & firewall)
+allowed_ips:
+
+# Block obviously dangerous commands, even if Airflow misconfigured
+command_blacklist:
+  - "shutdown"
+  - "reboot"
+  - "poweroff"
+  - "init 0"
+  - "halt"
+  - "rm -rf /"
+  - "mkfs "
+  - ":(){ :|:& };:"   # fork bomb pattern
+
+# Very simple rate limiting per IP (all endpoints)
+rate_limit:
+  window_seconds: 60
+  max_requests: 120   # per IP per window
+
+# Paths to certs for mTLS (server side)
+tls:
+  server_cert: "/opt/airflow_agent/certs/cert.pem"
+  server_key: "/opt/airflow_agent/certs/key.pem"
+
+
+cat /etc/systemd/system/airflow-agent.service
+
+[Unit]
+Description=Airflow Root Agent
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/airflow_agent
+
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/local/bin/uvicorn agent:app \
+  --host 0.0.0.0 \
+  --port 18443 \
+  --ssl-keyfile /opt/airflow_agent/certs/key.pem \
+  --ssl-certfile /opt/airflow_agent/certs/cert.pem
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+
