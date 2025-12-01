@@ -185,9 +185,12 @@ cat /etc/systemd/system/airflow-agent.service
     [Install]
     WantedBy=multi-user.target 
 
+Restart the systemd service 
 
-
-
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now airflow-agent.service
+    sudo systemctl status airflow-agent.service
+    
 
 <img width="532" height="283" alt="image" src="https://github.com/user-attachments/assets/491eb83a-6a2e-4041-a93c-3e90d42e5e3f" />
 
