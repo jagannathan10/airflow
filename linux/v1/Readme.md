@@ -119,9 +119,15 @@ Extra JSON:
 
 Agent Setup:
 
-dnf install -y python3 tmux openssl
+       mkdir -p /opt/airflow_agent/certs  /opt/airflow_agent/log /opt/airflow_agent/jobs
+       dnf install -y python3 python3-pip tmux gcc python3-devel
+       pip3 install --upgrade pip
+       pip3 install fastapi uvicorn[standard] pydantic    
 
-mkdir -p /opt/airflow_agent/certs  /opt/airflow_agent/log /opt/airflow_agent/jobs
+
+Validate:
+
+    ls -lrt /usr/bin/python3 /usr/local/bin/uvicorn
 
 
 /opt/airflow_agent/config.xml 
