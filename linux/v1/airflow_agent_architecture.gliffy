@@ -1,0 +1,76 @@
+{
+  "contentType": "application/gliffy+json",
+  "version": "1.0",
+  "metadata": {},
+  "stage": {
+    "objects": [
+      {
+        "id": 1,
+        "uid": "airflow",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 100,
+        "y": 50,
+        "width": 200,
+        "height": 60,
+        "graphic": {
+          "shape": "rectangle",
+          "text": "Airflow\n(DAG + Operators + Sensors)"
+        }
+      },
+      {
+        "id": 2,
+        "uid": "agent",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 100,
+        "y": 180,
+        "width": 200,
+        "height": 60,
+        "graphic": {
+          "shape": "rectangle",
+          "text": "Agent (Linux/Windows)\nHTTPS + Token"
+        }
+      },
+      {
+        "id": 3,
+        "uid": "target",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 100,
+        "y": 310,
+        "width": 200,
+        "height": 60,
+        "graphic": {
+          "shape": "rectangle",
+          "text": "Target Server\n(App/ETL/Batch jobs)"
+        }
+      },
+      {
+        "id": 4,
+        "uid": "arrow1",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 190,
+        "y": 120,
+        "width": 20,
+        "height": 40,
+        "graphic": {
+          "shape": "line",
+          "text": "",
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": 5,
+        "uid": "arrow2",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 190,
+        "y": 250,
+        "width": 20,
+        "height": 40,
+        "graphic": {
+          "shape": "line",
+          "text": "",
+          "strokeWidth": 2
+        }
+      }
+    ]
+  }
+}
