@@ -4,16 +4,18 @@ touch /home/almalinux/airflow/plugins/__init__.py
 Sync DAG:
 
 # /home/almalinux/airflow/dags/agent_sync_test.py
-from datetime import datetime
-from airflow import DAG
-from agent_operators import AgentSyncOperator
 
-with DAG(
-    dag_id="agent_sync_test",
-    start_date=datetime(2025, 1, 1),
-    schedule_interval=None,
-    catchup=False,
-):
+
+    from datetime import datetime
+    from airflow import DAG
+    from agent_operators import AgentSyncOperator
+    
+    with DAG(
+        dag_id="agent_sync_test",
+        start_date=datetime(2025, 1, 1),
+        schedule_interval=None,
+        catchup=False,
+    ):  
 
     AgentSyncOperator(
         task_id="sync_ls_root",
@@ -28,9 +30,10 @@ with DAG(
 Async (non-tmux) DAG
 
 # /home/almalinux/airflow/dags/agent_async_test.py
-from datetime import datetime
-from airflow import DAG
-from agent_operators import AgentAsyncOperator
+
+    from datetime import datetime
+    from airflow import DAG
+    from agent_operators import AgentAsyncOperator
 
     with DAG(
         dag_id="agent_async_test",
@@ -50,7 +53,7 @@ from agent_operators import AgentAsyncOperator
     )
 
 
-    TMUX + Sensor DAG (recommended for long jobs)
+TMUX + Sensor DAG (recommended for long jobs)
     
     # /home/almalinux/airflow/dags/agent_tmux_test.py
     from datetime import datetime
@@ -150,30 +153,37 @@ mkdir -p /opt/airflow_agent/certs  /opt/airflow_agent/log /opt/airflow_agent/job
       server_key: "/opt/airflow_agent/certs/key.pem"
 
 
+Create SSL key :
 
+
+    openssl req -x509 -nodes -days 365 \
+      -newkey rsa:4096 \
+      -keyout key.pem \
+      -out cert.pem \
+      -subj "/CN=$(hostname -f)"
 
 
 cat /etc/systemd/system/airflow-agent.service
 
-[Unit]
-Description=Airflow Root Agent
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/airflow_agent
-
-Environment="PYTHONUNBUFFERED=1"
-ExecStart=/usr/local/bin/uvicorn agent:app \
-  --host 0.0.0.0 \
-  --port 18443 \
-  --ssl-keyfile /opt/airflow_agent/certs/key.pem \
-  --ssl-certfile /opt/airflow_agent/certs/cert.pem
-
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+    [Unit]
+    Description=Airflow Root Agent
+    After=network.target
+    
+    [Service]
+    WorkingDirectory=/opt/airflow_agent
+    
+    Environment="PYTHONUNBUFFERED=1"
+    ExecStart=/usr/local/bin/uvicorn agent:app \
+      --host 0.0.0.0 \
+      --port 18443 \
+      --ssl-keyfile /opt/airflow_agent/certs/key.pem \
+      --ssl-certfile /opt/airflow_agent/certs/cert.pem
+    
+    Restart=always
+    RestartSec=5
+    
+    [Install]
+    WantedBy=multi-user.target 
 
 
 
