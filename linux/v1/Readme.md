@@ -135,10 +135,10 @@ Type: HTTP (or generic)
 
 Extra JSON:
 
-{
-  "agent_token": "scb-airflowagent-.....",
-  "verify_ssl": false
-}
+    {
+      "agent_token": "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2",
+      "verify_ssl": false
+    }
 
 
 Agent Setup:
