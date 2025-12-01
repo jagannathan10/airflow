@@ -1,0 +1,571 @@
+This document describes the Agent-Based Remote Execution Framework used for enabling Apache Airflow to execute jobs on 2000+ Linux (RHEL 8/9) and Windows servers using HTTPS, root-level agents, run_as_user switching, and long-duration TMUX-based job execution.
+
+The framework eliminates the need for SSH keys in Airflow and provides a secure, scalable, and banking-grade mechanism for distributed batch execution.
+
+🟩 2. Objectives
+Objective	Description
+Secure Remote Execution	Execute jobs on target servers via HTTPS API with strong token validation
+Scalable Architecture	Support 2000+ agents with minimal Airflow load
+Support Long Jobs	Handle 1–2 day long ETL jobs using TMUX
+OS-Agnostic	Support both Linux and Windows target hosts
+Lightweight & Stateless	No DB on agent; no persistent connection; stateless API
+Banking-Grade Security	Certificates, tokens, audit logs, root → run_as_user switching
+
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                          Airflow Platform (POD)                      │
+ │ ┌──────────────────────────┐   ┌───────────────────────────────────┐ │
+ │ │ DAGs & Operators         │   │ AgentStatusSensor                 │ │
+ │ │ (Sync / Async / TMUX)    │   │ (lightweight status polling)      │ │
+ │ └──────────────────────────┘   └───────────────────────────────────┘ │
+ └──────────────────────────────────────────────────────────────────────┘
+                 |                         |                     |
+                 | HTTPS + Token           | HTTPS + Token       | HTTPS + Token
+                 ▼                         ▼                     ▼
+ ┌───────────────────────────┐ ┌───────────────────────────┐ ┌───────────────────────────┐
+ │ Airflow Agent (root)      │ │ Airflow Agent (root)      │ │ Airflow Agent (root)      │
+ │ RHEL 8/9                  │ │ RHEL 8/9                  │ │ Windows                   │
+ │ Uvicorn + FastAPI         │ │ Uvicorn + FastAPI         │ │ Python HTTP API           │
+ └───────────────────────────┘ └───────────────────────────┘ └───────────────────────────┘
+                 ▼                         ▼                     ▼
+       su - <user> execution    su - <user> execution      PowerShell runas.exe
+                 ▼                         ▼                     ▼
+        Applications, ETL, DB       File Transfer Nodes       Windows Batch Jobs
+
+
+Functional Components
+
+4.1 Airflow Operators
+
+Three operators provide job submission styles:
+
+Operator	            Mode	              Use Case
+AgentSyncOperator	  Synchronous	        Short commands (≤ 1 min)
+AgentAsyncOperator	Background          job with polling	Moderate jobs (2–20 min)
+AgentTmuxOperator	  TMUX-based          long-running jobs	ETL / Batch ≥ 20 min to multi-day
+
+4.2 AgentStatusSensor
+
+Lightweight polling of:
+
+GET /status/<job_id>
+
+
+Handles 24–48 hour wait times without blocking workers.
+
+4.3 Agent Application (agent.py)
+
+Runs on target servers:
+
+Runs as root
+
+Switches to required user via:
+
+Linux: su - <user> -c "<command>"
+
+Windows: runas.exe /user:<domain>\<user>
+
+Executes shell/commands/scripts
+
+Supports:
+
+TMUX execution
+
+Background jobs
+
+Sync jobs
+
+Tracks:
+
+stdout.log
+
+stderr.log
+
+return code
+
+job status
+
+🟩 5. Detailed Data Flow
+5.1 Job Submission Flow
+
+User triggers Airflow DAG
+       │
+       ▼
+Operator (Sync/Async/TMUX)
+       │  Builds payload + headers
+       ▼
+POST https://<agent>/run
+       │
+       ▼
+Agent validates X-Agent-Token
+       │
+       ▼
+Agent runs job:
+• Sync     → run & return
+• Async    → background with exit file
+• TMUX     → create tmux session
+       │
+       ▼
+Agent returns JSON {job_id, immediate response}
+       │
+       ▼
+Airflow marks operator SUCCESS
+
+5.2 Long-Running Job Monitoring Flow
+
+AgentStatusSensor
+       │
+       ▼
+GET https://<agent>/status/<job_id>
+       │
+       ▼
+If status=running    → Sleep poll_interval
+If status=finished    → Read exit code (0/1)
+If exit_code != 0     → Fail sensor
+If exit_code == 0     → Sensor success
+
+🟩 6. APIs Provided by Agent
+Endpoint	Method	Purpose
+/ping	POST	Health/Token check
+/run	POST	Submit job
+/status/<job_id>	GET	Fetch job status
+/logs/<job_id>	GET	Fetch stdout/stderr (future extension)
+🟩 7. Security Architecture
+7.1 Transport Security
+
+HTTPS using:
+
+TLS1.2/1.3
+
+Self-signed or CA-signed certs
+
+No plaintext allowed
+
+7.2 Authentication
+
+Required header:
+
+X-Agent-Token: scb-airflowagent-<64-char-token>
+
+
+Tokens are rotated manually or via vault
+
+Stored only in Airflow connection extra JSON
+
+7.3 Authorization
+
+Each agent runs as root but only performs:
+
+Command execution
+
+run_as_user switching
+
+Result reporting
+
+No remote file edits, no OS modification APIs.
+
+7.4 Isolation
+
+Agent binds only to internal subnet (ex: 10.x.x.x)
+
+Firewalls restrict inbound access to Airflow IP only
+
+No external exposure
+
+7.5 Logging
+
+Logs stored under /opt/airflow_agent/jobs/
+
+Agent writes audit trail of:
+
+job_id
+
+timestamp
+
+run_as_user
+
+executed command
+
+return code
+
+🟩 8. Scalability Design
+Component	Scaling Strategy
+Airflow Operators	Non-blocking, stateless
+AgentStatusSensor	Lightweight GET, deferrable ready
+Agent Servers	Horizontal scaling; each server self-contained
+Job Persistence	Filesystem only, no DB overhead
+Connection count	Only 1–2 outgoing HTTPS per minute per active job
+2000+ agent support
+
+At 2000 agents, sensors polling every 30 seconds equals:
+
+2000 sensors × 1 GET/30s → 66 requests per second
+
+
+Perfectly fine for banks.
+
+🟩 9. Deployment Architecture
+9.1 Airflow Side
+
+Place operator pack under:
+
+$AIRFLOW_HOME/plugins/agent_operators/
+
+
+Create connection:
+
+Conn ID: agent_default
+Host: dummy
+Extra JSON:
+{
+  "agent_token": "scb-airflowagent-<64>",
+  "verify_ssl": false
+}
+
+9.2 Linux Agent
+
+Directory:
+
+/opt/airflow_agent/
+
+
+Certificates:
+
+/opt/airflow_agent/certs/cert.pem
+/opt/airflow_agent/certs/key.pem
+
+
+Install:
+
+pip install fastapi uvicorn pydantic
+
+
+Start service:
+
+systemctl enable airflow-agent
+systemctl start airflow-agent
+
+9.3 Windows Agent
+
+Python + Flask/uvicorn
+
+runas.exe for user switching
+
+🟩 10. Operator Examples
+Sync Job
+AgentSyncOperator(
+    task_id="list_tmp",
+    target_server="10.1.2.5:18443",
+    command="ls -l /tmp",
+    job_user="nginxadm",
+    agent_conn_id="agent_default",
+)
+
+Async Job
+AgentAsyncOperator(
+    task_id="background_cleanup",
+    target_server="10.1.2.6:18443",
+    command="sh /opt/app/cleanup.sh",
+    job_user="appuser",
+)
+
+TMUX (long)
+AgentTmuxOperator(
+    task_id="long_etl_run",
+    target_server="10.1.2.7:18443",
+    command="sh /home/testuser/run_12hr_etl.sh",
+    job_user="testuser",
+    fire_and_forget=True,
+)
+
+Status Sensor
+AgentStatusSensor(
+    task_id="check_status",
+    target_server="10.1.2.7:18443",
+    job_id="{{ ti.xcom_pull('long_etl_run')['job_id'] }}"
+)
+
+🟩 11. Failure Handling & Recovery
+Issue	Handling
+Agent unreachable	Operator fails immediately
+Token invalid	HTTP 403 → Airflow failure
+TMUX session killed	/status returns failed
+Agent restarted	Job directory persists
+Sensor timeout	DAG fails with custom message
+🟩 12. Non-Functional Requirements
+Category	Requirement
+Performance	Handle 1000+ concurrent sensors
+Availability	Agent must restart automatically
+Reliability	Job status must survive agent restart
+Security	No plaintext commands; full audit
+Maintainability	Simple Python, no DB, zero dependencies
+Observability	Logs on agent, Airflow UI status
+🟩 13. Future Enhancements
+
+Distributed job retention management
+
+Real-time log streaming (/logs/<job_id>?tail=100)
+
+Multi-agent failover groups
+
+Kubernetes-native Airflow Agent
+
+Vault integration for token rotation
+
+🟩 14. Summary
+
+This HLD provides a complete, secure, scalable, banking-grade agent-based remote execution platform integrating Apache Airflow with Linux and Windows hosts over HTTPS.
+
+The architecture is:
+
+Simple
+
+Stateless
+
+Resilient
+
+Suitable for 2000+ target servers
+
+Supports long-running jobs (1–2 days) using TMUX
+
+Completely decoupled from SSH or remote filesystem access
+
+This approach is ready for enterprise deployment.
+
+
+
+
+
+Below is a clean, banking-grade architecture diagram + flow chart explaining exactly how the Airflow → Agent → Target Server mechanism works for:
+
+Sync jobs
+
+Async jobs
+
+Long-running TMUX jobs (1–2 days)
+
+AgentStatusSensor
+
+2000+ servers, scalable model
+
+Root agent with run_as_user switching
+
+All diagrams are included in ASCII (text) and detailed written architecture so you can copy into Confluence, Word, or draw in draw.io/Lucidchart.
+
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                          Airflow Environment                         │
+ │        (webserver + scheduler + workers, running inside POD)         │
+ └──────────────────────────────────────────────────────────────────────┘
+                |                     |                     |
+        (HTTPS + Token)       (HTTPS + Token)       (HTTPS + Token)
+                |                     |                     |
+                ▼                     ▼                     ▼
+ ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+ │  Linux Agent (root)  │   │  Linux Agent (root)  │   │ Windows Agent (root) │
+ │  RHEL8/9             │   │  RHEL8/9             │   │  (PowerShell exec)   │
+ │  Uvicorn/FastAPI     │   │  Uvicorn/FastAPI     │   │  Python HTTP API     │
+ └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+                |                     |                     |
+      su - <user> execution  su - <user> execution   run_as_user using runas.exe
+                |                     |                     |
+                ▼                     ▼                     ▼
+        Application servers      DB servers            Windows app servers
+        Script runners           Batch engines        (PowerShell / cmd)
+        ETL hosts                File transfer nodes
+
+
+KEY POINTS:
+
+✔ Airflow never SSHs
+✔ Agent runs as root
+✔ Jobs run as selected users
+✔ Communication is HTTPS + Agent Token
+✔ No DB required on agents
+✔ Supports 2000+ agents (fully scalable)
+✔ Works for sync, async, and tmux long-duration jobs
+✔ Airflow remains lightweight (no long blocking)
+✔ Agent stores job artefacts under /opt/airflow_agent/jobs/<job_id>/
+
+Detailed Architecture Flow (with components)
+
+                               Airflow Server
+                               (running as POD)
+                                       │
+                                       │  1) User triggers DAG
+                                       │
+                                       ▼
+                        ┌───────────────────────────┐
+                        │      Airflow DAG/Task     │
+                        │  AgentSync / Async / TMUX │
+                        └───────────────────────────┘
+                                       │
+                                       │  2) Operator creates JSON payload
+                                       │
+                                       ▼
+                           HTTPS POST /run  (token)
+                                       │
+                                       ▼
+                     ┌─────────────────────────────────┐
+                     │   Agent Root Process (uvicorn)  │
+                     │  /opt/airflow_agent/agent.py     │
+                     └─────────────────────────────────┘
+                                       │
+                     ┌─────────────────────────────────┐
+                     │ Validate Token (X-Agent-Token)  │
+                     └─────────────────────────────────┘
+                                       │
+                                       ▼
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                    JOB EXECUTION LOGIC (AGENT)                          │
+    │                                                                         │
+    │  * If sync: run immediately, block, return output                      │
+    │  * If async: background & poll                                          │
+    │  * If tmux: start tmux session, return job_id immediately               │
+    │                                                                         │
+    │  Job directory:                                                         │
+    │  /opt/airflow_agent/jobs/<job_id>/                                      │
+    │      - stdout.log                                                       │
+    │      - stderr.log                                                       │
+    │      - exit (exit code)                                                 │
+    │      - status ("running" / "finished")                                  │
+    └─────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       │ 3) If TMUX mode → Return job_id immediately
+                                       ▼
+                       Airflow XCom ←───────────────────────────┐
+                                                                 │
+                             4) AgentStatusSensor starts polling │
+                                                                 │
+                          Airflow GET /status/<job_id> (token)   │
+                                                                 │
+                        Agent returns JSON: {status, rc, logs}   │
+                                                                 │
+                 Sensor finishes SUCCESS/FAILED based on rc <────┘
+
+
+
+Flow Chart (Operator→Agent→Sensor)
+
+
+                   ┌────────────────────────────────────────┐
+                   │        Start Airflow DAG Task          │
+                   └────────────────────────────────────────┘
+                                     │
+                                     ▼
+                      ┌─────────────────────────────┐
+                      │ Which operator is used?      │
+                      └─────────────────────────────┘
+            ┌──────────────────┬──────────────────────┬──────────────────────┐
+            ▼                  ▼                      ▼
+   ┌────────────────┐  ┌───────────────────┐   ┌────────────────────────────┐
+   │ Sync Operator   │  │ Async Operator   │   │ TMUX Operator               │
+   └────────────────┘  └───────────────────┘   └────────────────────────────┘
+            │                  │                      │
+            ▼                  ▼                      ▼
+   POST /run(sync=True)   POST /run(sync=False)    POST /run(use_tmux=True)
+            │                  │                      │
+     Agent executes      Agent backgrounds job    Agent creates tmux session
+     command directly    (no tmux)                returns job_id immediately
+            │                  │                      │
+     Returns result      Returns job_id            fire_and_forget=True
+       immediately           instantly             RETURNS immediately
+            │                  │                      │
+            └───────┬─────────┘                      │
+                    ▼                                ▼
+          Airflow SUCCESS/FAILED           XCom job_id saved by Airflow
+                                                     │
+                                                     ▼
+                                       ┌──────────────────────────┐
+                                       │   AgentStatusSensor      │
+                                       └──────────────────────────┘
+                                                     │
+                                     Pokes GET /status/<job_id>
+                                                     │
+                       ┌─────────────────────────────┴───────────────────────────┐
+                       ▼                                                         ▼
+            status == "finished" & rc==0                          rc != 0 or failed
+                       ▼                                                         ▼
+                SENSOR SUCCESS                                         SENSOR FAIL
+                       ▼                                                         ▼
+                DAG GREEN PATH                                         DAG RED PATH
+
+
+
+
+How It Works Technically (Deep Dive)
+1) Airflow triggers job via Operator
+
+Operator prepares JSON:
+
+{
+   "job_type": "shell",
+   "command": "sh /home/testuser/run_etl.sh",
+   "run_as_user": "testuser",
+   "use_tmux": true/false,
+   "sync": true/false
+}
+
+2) HTTPS POST /run
+
+Headers include:
+
+X-Agent-Token: scb-airflowagent-<random64>
+
+3) Agent validates token
+
+Securely validates without DB.
+
+4) Job execution:
+Mode	Action
+Sync	subprocess.run → waits → returns output
+Async	subprocess.Popen → background → Airflow polls
+TMUX	tmux new -d -s agent_<job_id> running bash -c 'cmd; echo rc > exit'
+5) Agent writes job files:
+/opt/airflow_agent/jobs/<job_id>/
+    stdout.log
+    stderr.log
+    exit
+    status
+    tmux_session
+    pid
+
+6) For TMUX (Long Jobs)
+
+Agent returns job_id immediately, NOT blocking Airflow.
+
+7) AirflowAgentStatusSensor polls every N seconds
+
+Calls:
+
+GET https://agent/status/<job_id>
+
+
+Agent returns:
+
+{
+   "status": "running",
+   "return_code": null
+}
+
+
+When done:
+
+{
+   "status": "finished",
+   "return_code": 0
+}
+
+8) Sensor declares SUCCESS/FAILURE
+
+5. Why This Architecture Scales to 2000+ Agents
+Feature	Reason
+fire_and_forget TMUX	Airflow never blocks for jobs, even 48-hour ETLs
+Sensors are lightweight	Only small GETs every 30 seconds
+No SSH	No connection storms
+No DB on agent	Filesystem only → ultra-light
+Stateless HTTP API	Perfect for horizontal scaling
+No load on Airflow scheduler	Operator does only 1 POST; sensor does polling
+Tokens + HTTPS	Meets banking security standards
+
+
