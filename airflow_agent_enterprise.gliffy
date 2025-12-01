@@ -1,0 +1,252 @@
+{
+  "contentType": "application/gliffy+json",
+  "version": "1.0",
+  "metadata": {
+    "title": "Airflow Agent Enterprise Architecture",
+    "revision": 1
+  },
+  "stage": {
+    "background": "#FFFFFF",
+    "width": 1200,
+    "height": 800,
+    "objects": [
+      {
+        "id": 1,
+        "uid": "airflow_zone",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 50,
+        "y": 40,
+        "width": 420,
+        "height": 260,
+        "lockAspectRatio": false,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 2,
+          "strokeColor": "#003366",
+          "fillColor": "#E6F2FF",
+          "dashStyle": "solid",
+          "text": "Airflow Zone\n(Webserver + Scheduler + Workers)",
+          "fontSize": 14,
+          "hAlign": "center",
+          "vAlign": "top"
+        }
+      },
+      {
+        "id": 2,
+        "uid": "airflow_web",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 80,
+        "y": 90,
+        "width": 160,
+        "height": 60,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#003366",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Airflow Webserver\n(DAG UI)",
+          "fontSize": 12,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 3,
+        "uid": "airflow_sched",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 260,
+        "y": 90,
+        "width": 160,
+        "height": 60,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#003366",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Airflow Scheduler\n(DAG Orchestration)",
+          "fontSize": 12,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 4,
+        "uid": "airflow_workers",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 170,
+        "y": 180,
+        "width": 160,
+        "height": 80,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#003366",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Airflow Workers\nOperators + Sensors\n(Sync / Async / TMUX)",
+          "fontSize": 12,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 5,
+        "uid": "fw_zone",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 500,
+        "y": 40,
+        "width": 200,
+        "height": 260,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 2,
+          "strokeColor": "#999999",
+          "fillColor": "#F9F9F9",
+          "dashStyle": "dash",
+          "text": "Network / Firewall\n(HTTPS + Token)",
+          "fontSize": 13,
+          "hAlign": "center",
+          "vAlign": "top"
+        }
+      },
+      {
+        "id": 6,
+        "uid": "agent_zone",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 750,
+        "y": 40,
+        "width": 380,
+        "height": 320,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 2,
+          "strokeColor": "#336600",
+          "fillColor": "#F1FFF0",
+          "dashStyle": "solid",
+          "text": "Agent Zone\n(Root Agents on Target Hosts)",
+          "fontSize": 14,
+          "hAlign": "center",
+          "vAlign": "top"
+        }
+      },
+      {
+        "id": 7,
+        "uid": "linux_agent",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 780,
+        "y": 100,
+        "width": 160,
+        "height": 80,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#336600",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Linux Agent (root)\nRHEL 8/9\nFastAPI + Uvicorn\nTMUX + su - <user>",
+          "fontSize": 11,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 8,
+        "uid": "windows_agent",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 950,
+        "y": 100,
+        "width": 160,
+        "height": 80,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#336600",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Windows Agent (root)\nPython HTTP API\nrunas.exe / PowerShell",
+          "fontSize": 11,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 9,
+        "uid": "target_cluster",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 780,
+        "y": 220,
+        "width": 330,
+        "height": 120,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#336600",
+          "fillColor": "#FFFFFF",
+          "dashStyle": "solid",
+          "text": "Target Servers\n\u2022 App Servers\n\u2022 ETL / Batch Nodes\n\u2022 File Transfer Hosts\n\u2022 DB Utility Hosts",
+          "fontSize": 11,
+          "hAlign": "center",
+          "vAlign": "middle"
+        }
+      },
+      {
+        "id": 10,
+        "uid": "arrow_workers_fw",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 420,
+        "y": 210,
+        "width": 80,
+        "height": 2,
+        "graphic": {
+          "shape": "line",
+          "strokeWidth": 2,
+          "strokeColor": "#000000",
+          "dashStyle": "solid",
+          "startArrow": "none",
+          "endArrow": "arrow",
+          "text": "HTTPS + Token"
+        }
+      },
+      {
+        "id": 11,
+        "uid": "arrow_fw_agents",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 700,
+        "y": 210,
+        "width": 80,
+        "height": 2,
+        "graphic": {
+          "shape": "line",
+          "strokeWidth": 2,
+          "strokeColor": "#000000",
+          "dashStyle": "solid",
+          "startArrow": "arrow",
+          "endArrow": "arrow",
+          "text": "HTTPS /run, /status"
+        }
+      },
+      {
+        "id": 12,
+        "uid": "tmux_callout",
+        "type": "com.gliffy.shape.basic.basic_v1",
+        "x": 760,
+        "y": 360,
+        "width": 360,
+        "height": 120,
+        "graphic": {
+          "shape": "rectangle",
+          "strokeWidth": 1,
+          "strokeColor": "#999999",
+          "fillColor": "#FFFFF0",
+          "dashStyle": "dash",
+          "text": "Execution Pattern:\n1) AgentTmuxOperator \u2192 POST /run (use_tmux=True)\n2) Agent creates tmux session per job_id\n3) Job writes stdout/stderr/exit/status files\n4) AgentStatusSensor \u2192 GET /status/<job_id>\n5) Airflow marks SUCCESS/FAILED by return_code",
+          "fontSize": 11,
+          "hAlign": "left",
+          "vAlign": "top"
+        }
+      }
+    ]
+  }
+}
