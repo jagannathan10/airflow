@@ -88,6 +88,30 @@ TMUX + Sensor DAG (recommended for long jobs)
     start_tmux >> wait_tmux
 
 
+working Example:
+
+    from datetime import datetime
+    from agent_operators import AgentTmuxOperator
+    from airflow import DAG
+    
+    with DAG(
+        dag_id="agent_tmux_test",
+        start_date=datetime(2025, 1, 1),
+        schedule_interval="0 */2 * * *",   # every 2HR
+        catchup=False,
+    ):
+    
+        AgentTmuxOperator(
+            task_id="tmux_longrun",
+            target_server="192.168.120.139:18443",
+            command="sh /home/testuser/run_etl.sh",
+            job_user="testuser",
+            agent_conn_id="agent_default",
+            timeout_seconds=120,
+        )
+
+
+
 what you want for 1–2 day jobs:
 
 Operator is light
