@@ -53,7 +53,7 @@ Reload Systemd
       systemctl enable --now airflow-agent
       systemctl status airflow-agent
 
-/opt/airflow_agent/config.xml
+/opt/airflow_agent/config.xml & C:\airflow_agent\config.xml on Windows
 
       token: "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
       
