@@ -17,3 +17,6 @@
           agent_conn_id="agent_default",
           # skip_if_running=True is DEFAULT
       )
+
+
+Copy the code from agent_tmux_unified.py to $AIRFLOW_HOME/plugins/agent_tmux_unified.py
