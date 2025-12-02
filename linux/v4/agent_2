@@ -1,0 +1,392 @@
+#!/usr/bin/env python3
+"""
+Airflow Unified Agent (Linux tmux, Option A: root → run_as_user via su)
+
+Features:
+- HTTPS FastAPI agent started via embedded uvicorn.run()
+- token auth + IP allow-list + command blacklist + rate limiting
+- jobs executed via tmux sessions, 1 session per job
+- each job has its own directory under /opt/airflow_agent/jobs/<job_id>:
+    - stdout.log
+    - stderr.log
+    - exit          (numeric exit code)
+    - status        ("running" or "finished" or "failed")
+    - tmux_session  (session name)
+    - run.sh        (wrapper script run inside tmux)
+- skip_if_running: if same job_id already "running", no duplicate
+- retention_days: old job directories cleaned up
+"""
+
+import os
+import time
+import uuid
+import shutil
+import socket
+import threading
+import subprocess
+from datetime import datetime, timedelta
+from typing import Optional, Dict
+
+import yaml
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+# ----------------------------------------------------------------------
+# Hardening: PATH and TMPDIR for tmux under systemd
+# ----------------------------------------------------------------------
+os.environ["PATH"] = "/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin"
+os.environ.setdefault("TMPDIR", "/tmp")
+
+TMUX_PATH = "/usr/bin/tmux"  # adjust if tmux is elsewhere
+
+# ----------------------------------------------------------------------
+# Config loading
+# ----------------------------------------------------------------------
+CONFIG_FILE = "/opt/airflow_agent/config.xml"
+
+if not os.path.exists(CONFIG_FILE):
+    raise RuntimeError(f"Config file not found: {CONFIG_FILE}")
+
+with open(CONFIG_FILE, "r", encoding="utf-8", errors="ignore") as f:
+    CONFIG = yaml.safe_load(f) or {}
+
+LISTEN_HOST = CONFIG.get("listen", {}).get("host", "0.0.0.0")
+LISTEN_PORT = int(CONFIG.get("listen", {}).get("port", 18443))
+
+TLS_CERT = CONFIG.get("tls", {}).get("server_cert")
+TLS_KEY = CONFIG.get("tls", {}).get("server_key")
+
+TOKEN = CONFIG.get("token", "")
+
+ALLOWED_IPS = CONFIG.get("allowed_ips", []) or []
+BLACKLIST = CONFIG.get("command_blacklist", []) or []
+
+RATE_LIMIT_CFG = CONFIG.get("rate_limit", {}) or {}
+RATE_WINDOW = int(RATE_LIMIT_CFG.get("window_seconds", 60))
+RATE_MAX = int(RATE_LIMIT_CFG.get("max_requests", 120))
+
+RETENTION_DAYS = int(CONFIG.get("retention_days", 60))
+
+BASE_DIR = "/opt/airflow_agent"
+JOB_DIR = os.path.join(BASE_DIR, "jobs")
+os.makedirs(JOB_DIR, exist_ok=True)
+
+app = FastAPI()
+
+# rate limiting state
+_rate_state = {}  # ip -> (window_start_ts, count)
+
+
+# ----------------------------------------------------------------------
+# Utility helpers
+# ----------------------------------------------------------------------
+def _read(path: str, default: Optional[str] = None) -> Optional[str]:
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except Exception:
+        return default
+
+
+def _write(path: str, data: str):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", errors="ignore") as f:
+        f.write(str(data))
+
+
+def _job_paths(job_id: str) -> Dict[str, str]:
+    base = os.path.join(JOB_DIR, job_id)
+    return {
+        "job": base,
+        "stdout": os.path.join(base, "stdout.log"),
+        "stderr": os.path.join(base, "stderr.log"),
+        "status": os.path.join(base, "status"),
+        "exit": os.path.join(base, "exit"),
+        "tmux": os.path.join(base, "tmux_session"),
+        "runner": os.path.join(base, "run.sh"),
+    }
+
+
+def _job_status(job_id: str) -> Dict[str, object]:
+    p = _job_paths(job_id)
+    if not os.path.isdir(p["job"]):
+        return {"error": "job_not_found", "job_id": job_id}
+
+    status = (_read(p["status"], "") or "").strip()
+    exit_s = (_read(p["exit"], "") or "").strip()
+
+    rc = None
+    if exit_s and exit_s.lstrip("-").isdigit():
+        rc = int(exit_s)
+
+    return {
+        "job_id": job_id,
+        "status": status or "unknown",
+        "return_code": rc,
+        "stdout": _read(p["stdout"], "") or "",
+        "stderr": _read(p["stderr"], "") or "",
+    }
+
+
+# ----------------------------------------------------------------------
+# Security: IP allow-list, token, rate limits, blacklist
+# ----------------------------------------------------------------------
+def _client_ip(request: Request) -> str:
+    # Basic: trust client.host (do NOT trust X-Forwarded-For here)
+    return request.client.host
+
+
+def _ip_allowed(ip: str) -> bool:
+    if not ALLOWED_IPS:
+        return True
+    import ipaddress
+
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+
+    for item in ALLOWED_IPS:
+        try:
+            if "/" in item:
+                net = ipaddress.ip_network(item, strict=False)
+            else:
+                net = ipaddress.ip_network(f"{item}/32", strict=False)
+            if addr in net:
+                return True
+        except Exception:
+            continue
+
+    return False
+
+
+def _rate_limit(ip: str) -> bool:
+    if RATE_MAX <= 0:
+        return True
+    now = time.time()
+    start, count = _rate_state.get(ip, (now, 0))
+    if now - start > RATE_WINDOW:
+        start, count = now, 0
+    count += 1
+    _rate_state[ip] = (start, count)
+    return count <= RATE_MAX
+
+
+def _blacklist_ok(cmd: str) -> bool:
+    low = cmd.lower()
+    for bad in BLACKLIST:
+        if bad.lower() in low:
+            return False
+    return True
+
+
+async def _validate_request(request: Request):
+    ip = _client_ip(request)
+    if not _ip_allowed(ip):
+        return JSONResponse({"error": "IP not allowed"}, status_code=403)
+
+    if not _rate_limit(ip):
+        return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
+
+    if TOKEN:
+        provided = request.headers.get("X-Agent-Token")
+        if provided != TOKEN:
+            return JSONResponse({"error": "Invalid token"}, status_code=401)
+
+    return None
+
+
+# ----------------------------------------------------------------------
+# Linux tmux job runner (Option A: su - user -c)
+# ----------------------------------------------------------------------
+def _make_runner_script(job_id: str, command: str, run_as_user: Optional[str]):
+    """
+    Create job-specific run.sh that:
+      - runs command as run_as_user (if given)
+      - redirects stdout/stderr
+      - writes exit code and 'finished' status
+    """
+    p = _job_paths(job_id)
+    job_dir = p["job"]
+    os.makedirs(job_dir, exist_ok=True)
+
+    stdout = p["stdout"]
+    stderr = p["stderr"]
+    exit_file = p["exit"]
+    status_file = p["status"]
+
+    # Escape single quotes in command for safe embedding
+    cmd_escaped = command.replace("'", "'\"'\"'")
+
+    if run_as_user:
+        # su - user -c 'bash -lc '<command>''
+        run_block = (
+            f"su - {run_as_user} -c 'bash -lc \\'{cmd_escaped}\\'' "
+            f"> '{stdout}' 2> '{stderr}'"
+        )
+    else:
+        # run as root
+        run_block = (
+            f"bash -lc '{cmd_escaped}' "
+            f"> '{stdout}' 2> '{stderr}'"
+        )
+
+    script = f"""#!/bin/bash
+set -e
+echo "running" > "{status_file}"
+{run_block}
+rc=$?
+echo "$rc" > "{exit_file}"
+echo "finished" > "{status_file}"
+exit "$rc"
+"""
+
+    runner_path = p["runner"]
+    with open(runner_path, "w", encoding="utf-8", errors="ignore") as f:
+        f.write(script)
+    os.chmod(runner_path, 0o700)
+    return runner_path
+
+
+def _start_tmux_job(job_id: str, command: str, run_as_user: Optional[str]):
+    """
+    Start a tmux session that runs run.sh for this job.
+    """
+    p = _job_paths(job_id)
+    runner = _make_runner_script(job_id, command, run_as_user)
+
+    tmux_session = f"agent_{job_id.replace('-', '')}"
+    _write(p["tmux"], tmux_session)
+
+    # Use absolute tmux path & no shell for reliability
+    cmd = [TMUX_PATH, "new-session", "-d", "-s", tmux_session, runner]
+    subprocess.Popen(cmd)
+
+
+# ----------------------------------------------------------------------
+# Cleanup thread (retention_days)
+# ----------------------------------------------------------------------
+def _cleanup_loop():
+    while True:
+        cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)
+        for job_id in os.listdir(JOB_DIR):
+            p = _job_paths(job_id)
+            job_path = p["job"]
+            if not os.path.isdir(job_path):
+                continue
+            try:
+                ctime = datetime.utcfromtimestamp(os.path.getctime(job_path))
+            except Exception:
+                continue
+
+            if ctime < cutoff:
+                # don't remove running jobs
+                status = (_read(p["status"], "") or "").strip()
+                if status == "running":
+                    continue
+
+                # try to kill tmux session if still around
+                tmux_sess = (_read(p["tmux"], "") or "").strip()
+                if tmux_sess:
+                    try:
+                        subprocess.Popen(
+                            [TMUX_PATH, "kill-session", "-t", tmux_sess],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                    except Exception:
+                        pass
+
+                shutil.rmtree(job_path, ignore_errors=True)
+        time.sleep(3600)  # run once per hour
+
+
+threading.Thread(target=_cleanup_loop, daemon=True).start()
+
+
+# ----------------------------------------------------------------------
+# FastAPI endpoints
+# ----------------------------------------------------------------------
+@app.post("/ping")
+async def ping(request: Request):
+    sec = await _validate_request(request)
+    if sec:
+        return sec
+    return {"status": "ok", "time": datetime.utcnow().isoformat()}
+
+
+@app.post("/run")
+async def run(request: Request):
+    """
+    Start (or skip) a job.
+
+    Request JSON:
+    {
+      "command": "sh /home/testuser/run_etl.sh",
+      "run_as_user": "testuser",
+      "job_id": "optional-str",         # if not provided, generated
+      "skip_if_running": true|false     # default true
+    }
+    """
+    sec = await _validate_request(request)
+    if sec:
+        return sec
+
+    payload = await request.json()
+
+    command = payload.get("command")
+    run_as_user = payload.get("run_as_user")
+    supplied_job_id = payload.get("job_id")
+    skip_if_running = payload.get("skip_if_running", True)
+
+    if not command:
+        return JSONResponse({"error": "command is required"}, status_code=400)
+
+    if not _blacklist_ok(command):
+        return JSONResponse(
+            {"error": "command blocked by blacklist"},
+            status_code=400,
+        )
+
+    job_id = supplied_job_id or str(uuid.uuid4())
+    p = _job_paths(job_id)
+
+    # Check if already running
+    if skip_if_running and os.path.exists(p["status"]):
+        status = (_read(p["status"], "") or "").strip()
+        if status == "running":
+            return {"job_id": job_id, "status": "already_running"}
+
+    # Reset job directory
+    if os.path.isdir(p["job"]):
+        shutil.rmtree(p["job"], ignore_errors=True)
+    os.makedirs(p["job"], exist_ok=True)
+
+    # Start tmux job
+    _start_tmux_job(job_id, command, run_as_user)
+
+    return {"job_id": job_id, "status": "submitted"}
+
+
+@app.get("/status/{job_id}")
+async def status(job_id: str, request: Request):
+    sec = await _validate_request(request)
+    if sec:
+        return sec
+    return _job_status(job_id)
+
+
+# ----------------------------------------------------------------------
+# Embedded uvicorn launcher (Option 1)
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "agent_unified:app",
+        host=LISTEN_HOST,
+        port=LISTEN_PORT,
+        ssl_keyfile=TLS_KEY,
+        ssl_certfile=TLS_CERT,
+        workers=1,
+    )
