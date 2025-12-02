@@ -1,3 +1,26 @@
+Dec 02 13:05:30 uklvadsb0371 python3[93986]: /opt/airflow_agent/agent_unified.py:263: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. >
+Dec 02 13:05:30 uklvadsb0371 python3[93986]:   class JobRequest(BaseModel):
+
+
+
+fixed below - should use python3.9
+
+ # alternatives --list
+libnssckbi.so.x86_64    auto    /usr/lib64/pkcs11/p11-kit-trust.so
+python                  auto    /usr/libexec/no-python
+cifs-idmap-plugin       auto    /usr/lib64/cifs-utils/cifs_idmap_sss.so
+python3                 auto    /usr/bin/python3.9
+ksh                     auto    /usr/bin/ksh93
+mta                     auto    /usr/sbin/sendmail.postfix
+ld                      auto    /usr/bin/ld.bfd
+
+
+yum remove python36
+yum install python39 python39-devel python39-pip
+pip3.9 install --index-url https://artifactory.global.standardchartered.com/artifactory/api/pypi/pypi/simple --upgrade pip
+pip3.9 install --index-url https://artifactory.global.standardchartered.com/artifactory/api/pypi/pypi/simple --upgrade fastapi uvicorn[standard] pyyaml pydantic
+
+
 Dec 02 12:45:24 uklvadsb0371 python3[92985]: Traceback (most recent call last):
 Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/agent_unified.py", line 37, in <module>
 Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from fastapi import FastAPI, Request, HTTPException
