@@ -47,6 +47,26 @@ Note: config.xml is actually YAML (as in your example). You’ll need PyYAML ins
       [Install]
       WantedBy=multi-user.target
 
+
+or
+
+      [Unit]
+      Description=Airflow Root Agent (Unified)
+      After=network.target
+      
+      [Service]
+      WorkingDirectory=/opt/airflow_agent
+      ExecStart=/usr/bin/python3 /opt/airflow_agent/agent_unified.py
+      Restart=always
+      RestartSec=5
+      Environment="PYTHONUNBUFFERED=1"
+      
+      [Install]
+      WantedBy=multi-user.target
+
+
+
+
 Reload Systemd
 
       systemctl daemon-reload
