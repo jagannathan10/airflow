@@ -1,3 +1,81 @@
+Environment="PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin"
+Environment="TMPDIR=/tmp"
+Full example:
+
+ini
+Copy code
+[Service]
+WorkingDirectory=/opt/airflow_agent
+Environment="PYTHONUNBUFFERED=1"
+Environment="PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin"
+Environment="TMPDIR=/tmp"
+
+ExecStart=/usr/bin/python3.9 /opt/airflow_agent/agent_unified.py
+
+Restart=always
+RestartSec=5
+Reload:
+
+nginx
+Copy code
+sudo systemctl daemon-reload
+sudo systemctl restart airflow-agent
+✔ FIX 2 — Add PATH export inside Python (redundant safety)
+Inside agent_unified.py, at the top:
+
+python
+Copy code
+import os
+os.environ["PATH"] = "/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin"
+os.environ["TMPDIR"] = "/tmp"
+Why include both systemd + python?
+
+→ When systemd restarts agent after crash, PYTHON may still see stripped environment.
+→ This makes it bulletproof.
+
+✔ FIX 3 — Use absolute tmux path in the agent
+Change:
+
+python
+Copy code
+tmux_cmd = f"tmux new-session ..."
+to:
+
+python
+Copy code
+tmux_cmd = f"/usr/bin/tmux new-session ..."
+OR auto-detect:
+
+python
+Copy code
+import shutil
+TMUX = shutil.which("tmux") or "/usr/bin/tmux"
+then:
+
+python
+Copy code
+tmux_cmd = f"{TMUX} new-session -d -s {tmux_session} ..."
+This is the most reliable fix.
+
+🟦 VERIFY AFTER FIX
+Run:
+
+powershell
+Copy code
+systemctl restart airflow-agent
+journalctl -u airflow-agent -f
+Then trigger DAG.
+
+Agent logs should now show tmux start + script exec, NOT:
+
+pgsql
+Copy code
+no server running on /tmp/tmux-0/default
+
+
+
+
+
 Dec 02 13:05:30 uklvadsb0371 python3[93986]: /opt/airflow_agent/agent_unified.py:263: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. >
 Dec 02 13:05:30 uklvadsb0371 python3[93986]:   class JobRequest(BaseModel):
 
