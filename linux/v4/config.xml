@@ -1,0 +1,36 @@
+# ======================================================================
+#  Universal Airflow Remote Agent - Configuration File
+# ======================================================================
+
+# Host/Port to bind the agent API
+listen:
+  host: "0.0.0.0"
+  port: 18443
+
+# TLS settings (Uvicorn will load these internally)
+tls:
+  server_cert: "/opt/airflow_agent/certs/cert.pem"
+  server_key: "/opt/airflow_agent/certs/key.pem"
+
+# Authentication token for Airflow
+token: "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+# Allow only these IP addresses
+allowed_ips:
+  - "192.168.120.137/32"
+
+# Dangerous command blacklist
+command_blacklist:
+  - "shutdown"
+  - "reboot"
+  - "rm -rf /"
+  - "mkfs "
+  - ":(){ :|:& };:"
+
+# Rate limiting
+rate_limit:
+  window_seconds: 60
+  max_requests: 120
+
+# Cleanup of old job folders
+retention_days: 60
