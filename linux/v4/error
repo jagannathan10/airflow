@@ -1,0 +1,26 @@
+Dec 02 12:45:24 uklvadsb0371 python3[92985]: Traceback (most recent call last):
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/agent_unified.py", line 37, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from fastapi import FastAPI, Request, HTTPException
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/fastapi/__init__.py", line 7, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from .applications import FastAPI as FastAPI
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/fastapi/applications.py", line 15, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from fastapi import routing
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/fastapi/routing.py", line 22, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from fastapi.datastructures import Default, DefaultPlaceholder
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/fastapi/datastructures.py", line 3, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from starlette.datastructures import URL as URL  # noqa: F401
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/starlette/datastructures.py", line 7, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from starlette.concurrency import run_in_threadpool
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/starlette/concurrency.py", line 6, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     import anyio
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/anyio/__init__.py", line 80, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from ._core._eventloop import (
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/anyio/_core/_eventloop.py", line 18, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     import sniffio
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/sniffio/__init__.py", line 10, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from ._impl import (
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/sniffio/_impl.py", line 1, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     from contextvars import ContextVar
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:   File "/opt/airflow_agent/.local/lib/python3.6/site-packages/contextvars/__init__.py", line 4, in <module>
+Dec 02 12:45:24 uklvadsb0371 python3[92985]:     import immutables
+Dec 02 12:45:24 uklvadsb0371 python3[92985]: ModuleNotFoundError: No module named 'immutables'
