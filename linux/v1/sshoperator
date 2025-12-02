@@ -1,0 +1,322 @@
+from airflow.providers.ssh.operators.ssh import SSHOperator
+from airflow.providers.ssh.hooks.ssh import SSHHook
+
+import re
+import time
+import os
+import requests
+from functools import cached_property
+from enum import StrEnum
+
+class OS(StrEnum):
+    LINUX = "linux"
+    WINDOWS = "windows"
+
+class HashiPasswordSSHOperator(SSHOperator):
+    def __init__(
+        self,
+        source_task_id: str,
+        index_conn_id: int,
+        polling_sec: int = 120,
+        os: OS = OS.LINUX,
+        hashi_enabled: bool = False,
+        *args,
+        **kwargs,
+    ):
+
+        kwargs.setdefault("conn_timeout", 900)
+        kwargs.setdefault("cmd_timeout", 900)
+
+        super().__init__(*args, **kwargs)
+        self.ssh_conn_id = "not used"
+        self.source_task_id = source_task_id
+        self.index_conn_id = index_conn_id
+        self.dynamic_conn_id = None
+        self.polling_sec = polling_sec
+        self.os = os
+        self.hashi_enabled = hashi_enabled
+
+    def execute(self, context):
+        ti = context["ti"]
+        conn_ids = ti.xcom_pull(task_ids=self.source_task_id)
+
+        if not conn_ids or len(conn_ids) == 0:
+            raise ValueError(f"No ssh_conn_id found from task {self.source_task_id}")
+
+        self.dynamic_conn_id = conn_ids[self.index_conn_id]
+
+        self.clean_up(context)
+
+        self._execute(context)
+
+        return self.poll_result(context)
+
+    @cached_property
+    def ssh_hook(self) -> SSHHook:
+        if not self.dynamic_conn_id:
+            raise RuntimeError(f"ssh_hook accessed before execute() resolved the dynamic connection id")
+
+        return HashiPasswordSSHOperator.create_ssh_hook(self.dynamic_conn_id, self.hashi_enabled)
+
+    def _execute(self, context):
+
+        org_command = self.dag.get_template_env().from_string(self.command).render(context)
+        unique_id = f"{ context["ti"].dag_id }_{ context["ti"].task_id }_{ self._get_run_id(context) }"
+
+        if self.os == OS.LINUX:
+            script = f"""
+                    #!/bin/bash
+                    if tmux has-session -t "{ unique_id }"; then
+                        echo "No rerun required as job { unique_id } still running"    
+                        exit 0
+                    fi
+                    
+                    { org_command.replace("__id__", unique_id) }
+                    """
+            self.command = script
+        else:
+            script = f"""
+                    try {{
+                        Get-ScheduledTask -TaskName { unique_id } -ErrorAction Stop
+                        Write-Output "No-Rerun-required-as-job-{ unique_id }-still-running"
+                    }} catch {{}}
+                    
+                    $commandPath = 'C:\\Temp\\{ unique_id }_cmd.ps1'
+                    @'
+                    { org_command }
+                    '@ | Out-File $commandPath -Encoding UTF8
+                    
+                    $scriptPath = 'C:\\Temp\\{ unique_id }.ps1'
+                    @'
+                    $transcript = 'C:\\Temp\\{ unique_id }_trans.log'
+                    $log = 'C:\\Temp\\{ unique_id }.log'
+                    $commandPath = 'C:\\Temp\\{ unique_id }_cmd.ps1'
+                    Start-Transcript -Path $transcript -Force
+                    
+                    $ErrorActionPreference = 'Continue'
+                    
+                    try {{
+                        & $commandPath *>&1 | Tee-Object -FilePath $log
+                        
+                        $code = if ($LASTEXITCODE) {{ $LASTEXITCODE }} elseif ($?) {{ 0 }} else {{ 1 }}
+                    }} catch {{
+                        $_ | Out-String | Add-Content -Path $log
+                        $code = 1
+                    }} finally {{
+                        Stop-Transcript
+                    }}
+                                        
+                    Set-Content 'C:\\Temp\\{ unique_id }.exit' $code
+                    exit $code
+                    '@ | Out-File $scriptPath -Encoding UTF8
+                    
+                    schtasks /Create /RU \\"SYSTEM\\" /SC ONCE /TN \\"{ unique_id }\\" /TR \\"powershell.exe -NoProfile -ExecutionPolicy Bypass -File '$scriptPath'\\" /ST 00:00 /F
+                    schtasks /Run /TN \\"{ unique_id }\\"
+                    """
+            self.command = "\n".join(line.lstrip() for line in script.splitlines())
+
+        super().execute(context)
+
+    def clean_up(self, context):
+
+        unique_id = f"{ context["ti"].dag_id }_{ context["ti"].task_id }_{ self._get_run_id(context) }"
+
+        with self.get_ssh_client() as ssh_client:
+            if self.os == OS.LINUX:
+                self.run_ssh_client_command(
+                    ssh_client,
+                    f"""
+                    #!/bin/bash
+                    if tmux has-session -t "{ unique_id }"; then
+                        echo "No clean up required as job { unique_id } still running"    
+                        exit 0
+                    fi
+                    
+                    rm -rf /tmp/{ unique_id }.exit
+                    echo "removed /tmp/{ unique_id }.exit"
+                    """,
+                    context=context)
+            else:
+
+                self.run_ssh_client_command(
+                    ssh_client,
+                    f"""
+                    try {{
+                        $job_detail =  Get-ScheduledTask -TaskName { unique_id } -ErrorAction Stop
+                        if ($job_detail.State -eq 'Ready') {{
+                            Write-Output "Deleting-job-{ unique_id }-which-completed"
+                            schtasks /Delete /TN "{ unique_id }" /F
+                        }}
+                    }} catch {{
+                        Write-Output "No-Clean-up-required"
+                    }}
+                    """,
+                    context=context)
+
+    def poll_result(self, context):
+        if self.os == OS.LINUX:
+            return self._poll_result_linux(context)
+        else:
+            return self._poll_result_windows(context)
+
+    def _poll_result_windows(self, context):
+        unique_id = f"{ context["ti"].dag_id }_{ context["ti"].task_id }_{ self._get_run_id(context) }"
+
+        with (self.get_ssh_client() as ssh_client):
+            while True:
+                result = self.run_ssh_client_command(
+                    ssh_client,
+                    f"""
+                    $job_detail = $null
+                    try {{
+                        $job_detail =  Get-ScheduledTask -TaskName { unique_id }  -ErrorAction Stop
+                    }} catch {{
+                        Write-Output "Job-not-found"
+                        exit 1
+                    }}
+                    
+                    Get-Content 'C:\\Temp\\{ unique_id }.log'
+                    
+                    if ($job_detail.State -eq 'Ready') {{
+                        schtasks /Delete /TN "{ unique_id }" /F
+                        
+                        $exitCode = Get-Content 'C:\\Temp\\{ unique_id }.exit'
+                        Write-Output "Exit-code:$exitCode"
+                        exit $exitCode
+                    }} else {{
+                        Write-Output "Job-is-running"
+                        exit 0
+                    }}
+                    """,
+                    context=context)
+
+                result_str = result.decode('utf-8')
+                self.log.info("result is %s", result_str)
+                if "Exit-code:" in result_str or "Job-not-found" in result_str:
+
+                    if "Job-not-found" in result_str:
+                        exit_code = 1
+                    else:
+                        regex = r"Exit-code:([-|0-9]+)"
+                        match = re.search(regex, result_str)
+
+                        if match:
+                            exit_code = int(match.group(1))
+                        else:
+                            self.log.info("exit-code-not-found")
+                            exit_code = 1
+
+                    self.raise_for_status(exit_code, b"", context=context)
+                    return { "stdout": result_str, "stderr": "", "exit_code":  exit_code }
+
+                self.log.info("sleep for %s seconds", self.polling_sec)
+                time.sleep(self.polling_sec)
+
+    def _poll_result_linux(self, context):
+        unique_id = f"{ context["ti"].dag_id }_{ context["ti"].task_id }_{ self._get_run_id(context) }"
+
+        with self.get_ssh_client() as ssh_client:
+            while True:
+                result = self.run_ssh_client_command(
+                    ssh_client,
+                    f"""
+                    #!/bin/bash
+                    cat /tmp/{ unique_id }.log
+                    
+                    if tmux has-session -t "{ unique_id }"; then
+                        echo "Job still running"    
+                        exit 0
+                    fi
+                    
+                    if [ -f /tmp/{ unique_id }.exit ]; then
+                        code=$(cat /tmp/{ unique_id }.exit)
+                        echo "Exit code: $code"
+                        exit $code
+                    else
+                        echo "Job not found"
+                        exit 1
+                    fi
+                    """,
+                    context=context)
+
+                result_str = result.decode('utf-8')
+                self.log.info("result is %s", result_str)
+                if "Exit code:" in result_str or "Job not found" in result_str:
+
+                    if "Job not found" in result_str:
+                        exit_code = 1
+                    else:
+                        regex = r"Exit code: ([-|0-9]+)"
+                        match = re.search(regex, result_str)
+
+                        if match:
+                            exit_code = int(match.group(1))
+                        else:
+                            self.log.info("exit code not found")
+                            exit_code = 1
+
+                    self.raise_for_status(exit_code, b"", context=context)
+                    return { "stdout": result_str, "stderr": "", "exit_code":  exit_code }
+
+                self.log.info("sleep for %s seconds", self.polling_sec)
+                time.sleep(self.polling_sec)
+
+    def _get_run_id(self, context) -> str:
+        run_id = context["ti"].run_id.split(".")[0]
+        regex = r'[:\-+]'
+        return re.sub(regex, "_", run_id)
+
+    @staticmethod
+    def create_ssh_hook(conn_id: str, hashi_enabled: bool) -> SSHHook:
+        hook = SSHHook(ssh_conn_id = conn_id)
+        if hashi_enabled:
+            import random
+            username = hook.username
+
+            base_url = os.environ.get("VAULT_BASE_URL", "https://vault-dev.sc.net:8200")
+            role_id = os.environ.get("VAULT_ROLE_ID")
+            secret_id = os.environ.get("VAULT_SECRET_ID")
+            ca_bundle = os.environ.get("VAULT_CA_BUNDLE")  # Path to CA cert file
+
+            if not base_url or not role_id or not secret_id:
+                raise RuntimeError("Missing Vault environment variables")
+
+            # Step 1: Get Vault token
+            login_url = f"{base_url}/v1/scb/auth/approle/login"
+            login_payload = {
+                "role_id": role_id,
+                "secret_id": secret_id
+            }
+            login_resp = requests.post(login_url, json=login_payload, timeout=10, verify=ca_bundle)
+            login_resp.raise_for_status()
+            client_token = login_resp.json()["auth"]["client_token"]
+
+            # Step 2: Get password for username with retry logic
+            secret_url = f"{base_url}/v1/scb/ad/zone1/static-cred/{username}"
+            headers = {"x-vault-token": client_token}
+            retry_intervals = [
+                (5, 15),
+                (15, 25),
+                (25, 35),
+                (30, 45),
+                (45, 60)
+            ]
+            last_exception = None
+            for attempt, (min_sec, max_sec) in enumerate(retry_intervals, 1):
+                try:
+                    secret_resp = requests.get(secret_url, headers=headers, timeout=10, verify=ca_bundle)
+                    secret_resp.raise_for_status()
+                    hook.password = secret_resp.json()["data"]["password"]
+                    break
+                except Exception as e:
+                    last_exception = e
+                    if attempt == len(retry_intervals):
+                        raise
+                    sleep_time = random.randint(min_sec, max_sec)
+                    print(
+                        f"Attempt {attempt} to fetch password from Vault failed: {e}. Retrying in {sleep_time} seconds."
+                    )
+                    time.sleep(sleep_time)
+            else:
+                raise last_exception
+        return hook
