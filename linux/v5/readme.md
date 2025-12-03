@@ -1,13 +1,13 @@
-from datetime import datetime
-from airflow import DAG
-from agent_tmux_unified_operator import AgentTmuxUnifiedOperator
-
-with DAG(
-    dag_id="etl_tmux_job",
-    start_date=datetime(2025, 1, 1),
-    schedule_interval="*/5 * * * *",
-    catchup=False,
-):
+    from datetime import datetime
+    from airflow import DAG
+    from agent_tmux_unified_operator import AgentTmuxUnifiedOperator
+    
+    with DAG(
+        dag_id="etl_tmux_job",
+        start_date=datetime(2025, 1, 1),
+        schedule_interval="*/5 * * * *",
+        catchup=False,
+    ):
 
     AgentTmuxUnifiedOperator(
         task_id="run_etl",
@@ -24,18 +24,18 @@ with DAG(
 When agent runs as root, you only need:
 
 # Directory for the agent code
-/opt/airflow_agent            owned by root:root
-/opt/airflow_agent/agent_unified.py
+    /opt/airflow_agent            owned by root:root
+    /opt/airflow_agent/agent_unified.py
 
 # Job directory (created by agent as root)
-/opt/airflow_agent/jobs       owned by root:root
+    /opt/airflow_agent/jobs       owned by root:root
 
 
 Recommended permissions:
 
-chown -R root:root /opt/airflow_agent
-chmod 755 /opt/airflow_agent
-chmod -R 755 /opt/airflow_agent/jobs
+    chown -R root:root /opt/airflow_agent
+    chmod 755 /opt/airflow_agent
+    chmod -R 755 /opt/airflow_agent/jobs
 
 
 Root will auto-create jobs/<job_id> with the right user permissions for each.
@@ -56,45 +56,45 @@ Save as:
 
 /etc/systemd/system/airflow-agent.service
 
-[Unit]
-Description=Airflow Unified Root TMUX Agent
-After=network.target
-Wants=network-online.target
-
-[Service]
-# -------- RUN AS ROOT --------
-User=root
-Group=root
-
-# -------- WORKING DIRECTORY --------
-WorkingDirectory=/opt/airflow_agent
-
-# -------- ENV VARS --------
-Environment="PYTHONUNBUFFERED=1"
-Environment="AGENT_CONFIG=/opt/airflow_agent/config.xml"
-
-# -------- START THE AGENT --------
-ExecStart=/usr/bin/python3 /opt/airflow_agent/agent_unified.py
-
-# -------- RESTART POLICY --------
-Restart=always
-RestartSec=5
-StartLimitIntervalSec=60
-StartLimitBurst=5
-
-# Logs go to journal
-StandardOutput=journal
-StandardError=journal
-
-# -------- SECURITY HARDENING --------
-# Protect system but allow user switching + tmux
-ProtectSystem=full
-ProtectHome=yes
-NoNewPrivileges=no             # Must be NO for tmux + su to work
-PrivateTmp=yes
-
-[Install]
-WantedBy=multi-user.target
+    [Unit]
+    Description=Airflow Unified Root TMUX Agent
+    After=network.target
+    Wants=network-online.target
+    
+    [Service]
+    # -------- RUN AS ROOT --------
+    User=root
+    Group=root
+    
+    # -------- WORKING DIRECTORY --------
+    WorkingDirectory=/opt/airflow_agent
+    
+    # -------- ENV VARS --------
+    Environment="PYTHONUNBUFFERED=1"
+    Environment="AGENT_CONFIG=/opt/airflow_agent/config.xml"
+    
+    # -------- START THE AGENT --------
+    ExecStart=/usr/bin/python3 /opt/airflow_agent/agent_unified.py
+    
+    # -------- RESTART POLICY --------
+    Restart=always
+    RestartSec=5
+    StartLimitIntervalSec=60
+    StartLimitBurst=5
+    
+    # Logs go to journal
+    StandardOutput=journal
+    StandardError=journal
+    
+    # -------- SECURITY HARDENING --------
+    # Protect system but allow user switching + tmux
+    ProtectSystem=full
+    ProtectHome=yes
+    NoNewPrivileges=no             # Must be NO for tmux + su to work
+    PrivateTmp=yes
+    
+    [Install]
+    WantedBy=multi-user.target
 
 ⚙️ 3️⃣ Why we MUST run as root for switching users
 
