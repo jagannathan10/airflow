@@ -1,128 +1,138 @@
-# ==============================
-# Airflow Windows Agent Service
-# ==============================
-
-param()
-
 $ErrorActionPreference = "Stop"
 
-# --- Configuration ---
-$Port = 18443
-$Token = "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
-$BaseDir = "C:\airflow_agent"
-$Cert = "$BaseDir\certs\cert.pem"
-$Key  = "$BaseDir\certs\key.pem"
-$LogDir = "$BaseDir\logs"
+# ===========================
+# CONFIG
+# ===========================
+$Port      = 18443
+$Token     = "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+$BasePath  = "C:\airflow_agent"
+$CertPath  = "$BasePath\certs\cert.pem"
+$KeyPath   = "$BasePath\certs\key.pem"
+$PollInt   = 30
 
+# Enable TLS12 / TLS13 only
+[System.Net.ServicePointManager]::SecurityProtocol = `
+    [System.Net.SecurityProtocolType]::Tls12 `
+  -bor `
+    [System.Net.SecurityProtocolType]::Tls13
+
+# Ensure log folder exists
+$LogDir = "$BasePath\logs"
 if (!(Test-Path $LogDir)) { New-Item -ItemType Directory $LogDir | Out-Null }
 
-# --- Create EventLog source if missing ---
-if (-not [System.Diagnostics.EventLog]::SourceExists("AirflowAgent")) {
-    New-EventLog -LogName Application -Source "AirflowAgent"
-}
+# ===========================
+# Start HTTPS Listener
+# ===========================
+$Listener = New-Object System.Net.HttpListener
+$Listener.Prefixes.Add("https://+:$Port/")
+$Listener.Start()
 
-function Log($msg) {
-    Write-EventLog -LogName Application -Source "AirflowAgent" -EntryType Information -EventId 1000 -Message $msg
-}
+Write-Host "Airflow Windows Agent listening on port $Port (TLS12/13)"
 
-# --- HTTPS Listener ---
-Add-Type -AssemblyName System.Net.HttpListener
-
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("https://*:18443/")
-$listener.Start()
-Log "Airflow Agent Service Started on port 18443"
-
-# --- Job Tracking ---
-$Running = @{}
-
-# --- API Routes ---
 while ($true) {
-    try {
-        $ctx = $listener.GetContext()
-        $req = $ctx.Request
-        $resp = $ctx.Response
+    $Ctx = $Listener.GetContext()
+    $Req = $Ctx.Request
+    $Resp = $Ctx.Response
 
-        # Token check
-        if ($req.Headers["X-Agent-Token"] -ne $Token) {
-            $resp.StatusCode = 401
-            $resp.Close()
+    try {
+        # AUTH
+        $reqToken = $Req.Headers["X-Agent-Token"]
+        if ($reqToken -ne $Token) {
+            $Resp.StatusCode = 403
+            $Resp.OutputStream.Close()
             continue
         }
 
-        switch ($req.Url.AbsolutePath) {
+        # ROUTER
+        switch ($Req.Url.AbsolutePath) {
 
             "/run" {
-                $body = (New-Object IO.StreamReader($req.InputStream)).ReadToEnd()
-                $data = $body | ConvertFrom-Json
+                $body = (New-Object IO.StreamReader($Req.InputStream)).ReadToEnd()
+                $json = $body | ConvertFrom-Json
 
-                $id = $data.id
-                $cmd = $data.command
-                $taskName = "Airflow_$id"
+                $JobID = $json.id
+                $Cmd   = $json.command
 
-                if ($Running.ContainsKey($id)) {
-                    # Already running → do not trigger duplicate
-                    $resp.StatusCode = 409
-                    $resp.Close()
+                # Prevent duplicate run
+                $task = Get-ScheduledTask -TaskName $JobID -ErrorAction SilentlyContinue
+                if ($task -and $task.State -eq "Running") {
+                    $Resp.StatusCode = 409   # Conflict
+                    $Resp.OutputStream.Close()
                     continue
                 }
 
-                # Write command file
-                $cmdFile = "$LogDir\$id.ps1"
-                $cmd | Out-File -Encoding UTF8 $cmdFile
+                $LogFile = "$BasePath\task_$JobID.log"
+                $ExitFile = "$BasePath\task_$JobID.exit"
 
-                # Create scheduled task
-                schtasks /Create /TN $taskName /TR "powershell -NoProfile -File `"$cmdFile`"" /SC ONCE /ST 00:00 /RL HIGHEST /RU SYSTEM /F | Out-Null
-                schtasks /Run /TN $taskName | Out-Null
+                if (Test-Path $LogFile) { Remove-Item $LogFile -Force }
+                if (Test-Path $ExitFile) { Remove-Item $ExitFile -Force }
 
-                $Running[$id] = $true
-                $resp.StatusCode = 200
-                $resp.Close()
+                $psScript = "$BasePath\$JobID.ps1"
+                @"
+try {
+    & cmd.exe /c "$Cmd" *> "$LogFile"
+    Set-Content "$ExitFile" 0
+} catch {
+    Set-Content "$ExitFile" 1
+}
+"@ | Set-Content $psScript
+
+                schtasks /Create /TN $JobID /SC ONCE /RU SYSTEM /TR "powershell.exe -ExecutionPolicy Bypass -File $psScript" /ST 00:00 /F | Out-Null
+                schtasks /Run /TN $JobID | Out-Null
+
+                $Resp.StatusCode = 200
+                $bytes = [Text.Encoding]::UTF8.GetBytes("{""status"":""started""}")
+                $Resp.OutputStream.Write($bytes,0,$bytes.Length)
+                $Resp.OutputStream.Close()
             }
 
             "/status" {
-                $id = $req.QueryString["id"]
-                $exitFile = "$LogDir\$id.exit"
+                $JobID = $Req.QueryString["id"]
+                $task = Get-ScheduledTask -TaskName $JobID -ErrorAction SilentlyContinue
 
-                if (Test-Path $exitFile) {
-                    $code = Get-Content $exitFile | Out-String
-                    $resp.StatusCode = 200
-                    $json = "{ `"finished`": true, `"exit_code`": $code }"
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-                    $resp.OutputStream.Write($bytes,0,$bytes.Length)
-                    $resp.Close()
-                    $Running.Remove($id) | Out-Null
-                    continue
+                if (!$task) {
+                    $json = '{ "finished": true, "exit_code": 1 }'
+                }
+                elseif ($task.State -eq "Running") {
+                    $json = '{ "finished": false }'
+                }
+                else {
+                    $ExitFile = "$BasePath\task_$JobID.exit"
+                    $code = 1
+                    if (Test-Path $ExitFile) {
+                        $code = [int](Get-Content $ExitFile)
+                    }
+                    $json = "{ ""finished"": true, ""exit_code"": $code }"
                 }
 
-                $json = "{ `"finished`": false }"
-                $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-                $resp.OutputStream.Write($bytes,0,$bytes.Length)
-                $resp.Close()
+                $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+                $Resp.OutputStream.Write($bytes, 0, $bytes.Length)
+                $Resp.OutputStream.Close()
             }
 
             "/logs" {
-                $id = $req.QueryString["id"]
-                $logFile = "$LogDir\$id.log"
+                $JobID = $Req.QueryString["id"]
+                $LogFile = "$BasePath\task_$JobID.log"
 
-                if (Test-Path $logFile) {
-                    $content = Get-Content $logFile -Raw
+                if (Test-Path $LogFile) {
+                    $txt = Get-Content $LogFile -Raw
                 } else {
-                    $content = ""
+                    $txt = "NO LOG"
                 }
 
-                $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
-                $resp.OutputStream.Write($bytes,0,$bytes.Length)
-                $resp.Close()
+                $bytes = [Text.Encoding]::UTF8.GetBytes($txt)
+                $Resp.OutputStream.Write($bytes,0,$bytes.Length)
+                $Resp.OutputStream.Close()
             }
 
-            Default {
-                $resp.StatusCode = 404
-                $resp.Close()
+            default {
+                $Resp.StatusCode = 404
+                $Resp.OutputStream.Close()
             }
         }
-    }
-    catch {
-        Log "Error: $_"
+
+    } catch {
+        $Resp.StatusCode = 500
+        $Resp.OutputStream.Close()
     }
 }
