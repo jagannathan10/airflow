@@ -1,0 +1,46 @@
+PS C:\airflow_agent> .\install-agent.ps1
+At C:\airflow_agent\install-agent.ps1:121 char:9
++         }
++         ~
+Unexpected token '}' in expression or statement.
+At C:\airflow_agent\install-agent.ps1:123 char:19
++         "/status" {
++                   ~
+Unexpected token '{' in expression or statement.
+At C:\airflow_agent\install-agent.ps1:140 char:57
++             SendJSON @{ finished=\$true; exit_code=[int]\$code }
++                                                         ~~~~~~
+Unexpected token '\$code' in expression or statement.
+At C:\airflow_agent\install-agent.ps1:140 char:57
++             SendJSON @{ finished=\$true; exit_code=[int]\$code }
++                                                         ~
+The hash literal was incomplete.
+At C:\airflow_agent\install-agent.ps1:141 char:9
++         }
++         ~
+Unexpected token '}' in expression or statement.
+At C:\airflow_agent\install-agent.ps1:143 char:17
++         "/logs" {
++                 ~
+Unexpected token '{' in expression or statement.
+At C:\airflow_agent\install-agent.ps1:150 char:50
++                 \$resp.OutputStream.Write(\$bytes,0,\$bytes.Length)
++                                                  ~
+Missing argument in parameter list.
+At C:\airflow_agent\install-agent.ps1:152 char:26
++             \$resp.Close()
++                          ~
+An expression was expected after '('.
+At C:\airflow_agent\install-agent.ps1:157 char:26
++             \$resp.Close()
++                          ~
+An expression was expected after '('.
+At C:\airflow_agent\install-agent.ps1:159 char:5
++     }
++     ~
+Unexpected token '}' in expression or statement.
+Not all parse errors were reported.  Correct the reported errors and try again.
+    + CategoryInfo          : ParserError: (:) [], ParseException
+    + FullyQualifiedErrorId : UnexpectedToken
+
+PS C:\airflow_agent>
