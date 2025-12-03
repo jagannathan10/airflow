@@ -1,4 +1,23 @@
 PS C:\airflow_agent> .\install-agent.ps1
+
+Status   Name               DisplayName
+------   ----               -----------
+Stopped  AirflowAgent       Airflow Windows Agent Service
+Start-Service : Service 'Airflow Windows Agent Service (AirflowAgent)' cannot be started due to the following error:
+Cannot start service AirflowAgent on computer '.'.
+At C:\airflow_agent\install-agent.ps1:16 char:1
++ Start-Service $svcName
++ ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OpenError: (System.ServiceProcess.ServiceController:ServiceController) [Start-Service],
+   ServiceCommandException
+    + FullyQualifiedErrorId : CouldNotStartService,Microsoft.PowerShell.Commands.StartServiceCommand
+
+Airflow Agent installed & started.
+
+
+
+
+PS C:\airflow_agent> .\install-agent.ps1
 At C:\airflow_agent\install-agent.ps1:121 char:9
 +         }
 +         ~
