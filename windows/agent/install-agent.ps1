@@ -1,166 +1,142 @@
-# ============================================================
-# Windows Airflow Agent Service (HTTPS + Task Scheduler)
-# Port: 18443
-# Token: embedded
-# No cipher restrictions
-# ============================================================
+### ============================================
+### Airflow Windows Agent - HTTPS Service
+### ============================================
 
-$ErrorActionPreference = "Stop"
+param()
 
-# -------------------------------
-# CONFIG
-# -------------------------------
-$Port       = 18443
-$BaseDir    = "C:\airflow_agent"
-$CertDir    = "$BaseDir\certs"
-$LogDir     = "$BaseDir\logs"
-$Token      = "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
-$Poll       = 30   # poll interval
+# --- Settings ---
+$PORT       = 18443
+$TOKEN      = "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+$BASE       = "C:\airflow_agent"
+$CERT_PATH  = "$BASE\certs\cert.pem"
+$KEY_PATH   = "$BASE\certs\key.pem"
+$TASK_DIR   = "$BASE\tasks"
+$LOG_DIR    = "$BASE\logs"
 
-# Ensure folders
-New-Item -ItemType Directory -Path $BaseDir -Force | Out-Null
-New-Item -ItemType Directory -Path $CertDir -Force | Out-Null
-New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+New-Item -ItemType Directory -Force -Path $TASK_DIR | Out-Null
+New-Item -ItemType Directory -Force -Path $LOG_DIR  | Out-Null
 
-# Certificates
-$CertPath = "$CertDir\cert.pem"
-$KeyPath  = "$CertDir\key.pem"
+# --- TLS 1.2 / TLS 1.3 only ---
+[Net.ServicePointManager]::SecurityProtocol =
+    [Net.SecurityProtocolType]::Tls12 `
+  -bor `
+    [Net.SecurityProtocolType]::Tls13
 
-if (!(Test-Path $CertPath) -or !(Test-Path $KeyPath)) {
-    Write-Error "Missing TLS certificate. Place cert.pem and key.pem in $CertDir"
-}
-
-# Load certificate
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($CertPath)
-
-# ----------------------------------
-# HTTP(S) Listener
-# ----------------------------------
+# --- Create HTTPS listener ---
 $listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("https://+:$Port/")
-$listener.AuthenticationSchemes = "Anonymous"
+$listener.Prefixes.Add("https://+:$PORT/")
 $listener.Start()
-Write-Output "Airflow Windows Agent running on https://+:$Port/"
+Write-Host "Windows Agent running on https://0.0.0.0:$PORT"
 
-# ----------------------------------
-# Helper: send JSON
-# ----------------------------------
-function SendJSON($resp, $obj) {
-    $json = ($obj | ConvertTo-Json -Depth 5)
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-    $resp.ContentType = "application/json"
-    $resp.ContentLength64 = $bytes.Length
-    $resp.OutputStream.Write($bytes, 0, $bytes.Length)
-    $resp.OutputStream.Close()
+function SendJSON($respObj, $ctx) {
+    $json = ($respObj | ConvertTo-Json -Depth 6)
+    $buffer = [System.Text.Encoding]::UTF8.GetBytes($json)
+
+    $ctx.Response.StatusCode = 200
+    $ctx.Response.ContentType = "application/json"
+    $ctx.Response.OutputStream.Write($buffer,0,$buffer.Length)
+    $ctx.Response.Close()
 }
 
-# ----------------------------------
-# Helper: validate token
-# ----------------------------------
-function Validate-Token($context) {
-    if (-not $context.Request.Headers["X-Agent-Token"]) {
+function CheckAuth($ctx) {
+    if ($ctx.Request.Headers["X-Agent-Token"] -ne $TOKEN) {
+        SendJSON @{ error="Unauthorized" } $ctx
         return $false
     }
-    return ($context.Request.Headers["X-Agent-Token"] -eq $Token)
+    return $true
 }
 
-# ----------------------------------
-# MAIN LOOP
-# ----------------------------------
 while ($true) {
-    $context = $listener.GetContext()
+    $ctx = $listener.GetContext()
+    $path = $ctx.Request.Url.AbsolutePath.ToLower()
 
-    # Token check
-    if (-not (Validate-Token $context)) {
-        $res = $context.Response
-        SendJSON $res @{ error="Invalid token" }
-        continue
-    }
-
-    $path = $context.Request.Url.AbsolutePath.ToLower()
+    if (-not (CheckAuth $ctx)) { continue }
 
     switch ($path) {
 
         "/run" {
-            $reqBody = (New-Object IO.StreamReader($context.Request.InputStream)).ReadToEnd()
-            $data = $reqBody | ConvertFrom-Json
+            $body   = (New-Object IO.StreamReader($ctx.Request.InputStream)).ReadToEnd()
+            $data   = $body | ConvertFrom-Json
+            $id     = $data.id
+            $cmd    = $data.command
 
-            $id = $data.id
-            $command = $data.command
+            $logFile  = "$LOG_DIR\$id.log"
+            $exitFile = "$TASK_DIR\$id.exit"
 
-            $logFile = "$LogDir\$id.log"
-            $exitFile = "$LogDir\$id.exit"
-
-            # Do not run if a job already exists
-            if (Get-ScheduledTask -TaskName $id -ErrorAction SilentlyContinue) {
-                SendJSON $context.Response @{ msg="Already running" }
+            # No duplicate runs
+            $exists = schtasks /Query /TN $id 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                SendJSON @{ status="already_running" } $ctx
                 continue
             }
 
-            # Write command to PS1 file
-            $cmdPath = "$BaseDir\$id.ps1"
+            # Write command to temp script
+            $psCmd = "$TASK_DIR\$id.ps1"
             @"
-`$ErrorActionPreference='Continue'
+\$ErrorActionPreference='Continue'
 try {
-    $command | Out-File "$logFile" -Append
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$command" *>> "$logFile"
-    `$exit = if (`$LASTEXITCODE) { `$LASTEXITCODE } else { 0 }
+    $cmd
+    \$code = \$LASTEXITCODE
 } catch {
-    `$_ | Out-String | Out-File "$logFile" -Append
-    `$exit = 1
+    \$code = 1
 }
-"`$exit" | Out-File "$exitFile"
-"@ | Out-File $cmdPath -Encoding UTF8
+Set-Content -Path '$exitFile' -Value \$code
+"@ | Out-File $psCmd -Encoding UTF8
 
-            # Create scheduled task
-            schtasks /Create /TN $id /SC ONCE /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $cmdPath" /ST 00:00 /RU SYSTEM /F | Out-Null
+            # Create task
+            schtasks /Create /TN $id /SC ONCE /RU SYSTEM /TR "powershell -ExecutionPolicy Bypass -File `"$psCmd`"" /ST 00:00 /F | Out-Null
             schtasks /Run /TN $id | Out-Null
 
-            SendJSON $context.Response @{ msg="Started"; id=$id }
+            SendJSON @{ status="started"; id=$id } $ctx
         }
 
         "/status" {
-            $id = $context.Request.QueryString["id"]
+            $id = $ctx.Request.QueryString["id"]
 
-            $exitFile = "$LogDir\$id.exit"
+            $exitFile = "$TASK_DIR\$id.exit"
+            $running  = schtasks /Query /TN $id 2>$null
 
-            if (Test-Path $exitFile) {
-                $code = Get-Content $exitFile
-                SendJSON $context.Response @{ finished=$true; exit_code=[int]$code }
-            } else {
-                SendJSON $context.Response @{ finished=$false }
+            if ($LASTEXITCODE -ne 0) {
+                SendJSON @{ finished=$true; exit_code=1; error="not_found" } $ctx
+                continue
             }
+
+            # Still running?
+            if (-not (Test-Path $exitFile)) {
+                SendJSON @{ finished=$false } $ctx
+                continue
+            }
+
+            # Completed
+            $code = Get-Content $exitFile
+            schtasks /Delete /TN $id /F | Out-Null
+            SendJSON @{ finished=$true; exit_code=[int]$code } $ctx
         }
 
         "/logs" {
-            $id = $context.Request.QueryString["id"]
-            $logFile = "$LogDir\$id.log"
+            $id = $ctx.Request.QueryString["id"]
+            $logFile = "$LOG_DIR\$id.log"
 
-            $resp = $context.Response
             if (Test-Path $logFile) {
-                $bytes = [System.IO.File]::ReadAllBytes($logFile)
-                $resp.OutputStream.Write($bytes, 0, $bytes.Length)
+                $content = Get-Content $logFile -Raw
+            } else {
+                $content = ""
             }
-            $resp.Close()
+
+            SendJSON @{ logs=$content } $ctx
         }
 
         "/cleanup" {
-            $id = $context.Request.QueryString["id"]
-            $logFile  = "$LogDir\$id.log"
-            $exitFile = "$LogDir\$id.exit"
+            $id = $ctx.Request.QueryString["id"]
+            Remove-Item "$TASK_DIR\$id*" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$LOG_DIR\$id*" -Force -ErrorAction SilentlyContinue
+            schtasks /Delete /TN $id /F 2>$null | Out-Null
 
-            if (Get-ScheduledTask -TaskName $id -ErrorAction SilentlyContinue) {
-                schtasks /Delete /TN $id /F | Out-Null
-            }
-
-            Remove-Item $logFile -ErrorAction SilentlyContinue
-            Remove-Item $exitFile -ErrorAction SilentlyContinue
-
-            SendJSON $context.Response @{ cleaned=$true }
+            SendJSON @{ cleaned=$true; id=$id } $ctx
         }
 
         default {
-            SendJSON $context.Response @{ error="Unknown endpoint $path" }
+            SendJSON @{ error="Invalid endpoint" } $ctx
         }
     }
 }
