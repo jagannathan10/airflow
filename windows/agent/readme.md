@@ -2,23 +2,32 @@ Save as:
 C:\airflow_agent\install-agent.ps1
 
 
+    # ============================
+    # Install Airflow Windows Agent
+    # ============================
+    
     $svcName = "AirflowAgent"
     $svcDisplay = "Airflow Windows Agent Service"
-    $agentPath = "C:\airflow_agent\agent-service.ps1"
+    $scriptPath = "C:\airflow_agent\agent.ps1"
     
-    # Stop existing service
-    Get-Service $svcName -ErrorAction SilentlyContinue | ForEach-Object {
-        Stop-Service $_ -Force -ErrorAction SilentlyContinue
+    # Stop if running
+    if (Get-Service $svcName -ErrorAction SilentlyContinue) {
+        Stop-Service $svcName -Force -ErrorAction SilentlyContinue
         sc.exe delete $svcName | Out-Null
+        Start-Sleep 2
     }
     
-    # Install
-    New-Service -Name $svcName -BinaryPathName "powershell.exe -ExecutionPolicy Bypass -File `"$agentPath`"" `
-        -DisplayName $svcDisplay -StartupType Automatic
+    # Add URL ACL
+    netsh http delete urlacl url=https://*:18443/ 2>$null
+    netsh http add urlacl url=https://*:18443/ user="NT AUTHORITY\SYSTEM"
+    
+    # Install Service
+    New-Service -Name $svcName -BinaryPathName "powershell -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -DisplayName $svcDisplay -StartupType Automatic -Description "Airflow Agent"
     
     Start-Service $svcName
     
-    Write-Host "Airflow Windows Agent installed & started."
+    Write-Host "Airflow Agent installed & started."
+
 
 
 uninstall-agent.ps1 (Clean remove)
