@@ -4,23 +4,49 @@ C:\airflow_agent\install-agent.ps1
 
     $svcName = "AirflowAgent"
     $svcDisplay = "Airflow Windows Agent Service"
+    $agentPath = "C:\airflow_agent\agent-service.ps1"
     
-    $scriptPath = "C:\airflow_agent\agent-service.ps1"
-    
-    if (!(Test-Path $scriptPath)) {
-        Write-Error "agent-service.ps1 not found"
-        exit 1
+    # Stop existing service
+    Get-Service $svcName -ErrorAction SilentlyContinue | ForEach-Object {
+        Stop-Service $_ -Force -ErrorAction SilentlyContinue
+        sc.exe delete $svcName | Out-Null
     }
     
-    New-Service -Name $svcName `
-        -BinaryPathName "powershell.exe -ExecutionPolicy Bypass -File `"$scriptPath`"" `
-        -DisplayName $svcDisplay `
-        -StartupType Automatic
+    # Install
+    New-Service -Name $svcName -BinaryPathName "powershell.exe -ExecutionPolicy Bypass -File `"$agentPath`"" `
+        -DisplayName $svcDisplay -StartupType Automatic
     
     Start-Service $svcName
-    Write-Output "Airflow Agent installed & started."
+    
+    Write-Host "Airflow Windows Agent installed & started."
 
 
+uninstall-agent.ps1 (Clean remove)
+
+        $svcName = "AirflowAgent"
+        
+        Stop-Service $svcName -Force -ErrorAction SilentlyContinue
+        sc.exe delete $svcName | Out-Null
+        
+        Write-Host "Airflow Agent removed."
+
+🟢 How to Install
+mkdir C:\airflow_agent
+cd C:\airflow_agent
+
+# Place all files + certs here
+.\install-agent.ps1
+
+🔵 How to Remove
+cd C:\airflow_agent
+.\uninstall-agent.ps1
+
+🎯 Agent Endpoints (HTTPS)
+Method	Endpoint	Description
+POST	/run	Start Job
+GET	/status?id=JOBID	Job Status
+GET	/logs?id=JOBID	Fetch Logs
+POST	/cleanup?id=JOBID	Cleanup
 
 Folder Structure
 C:\airflow_agent\
