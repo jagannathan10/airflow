@@ -1,0 +1,52 @@
+Marking as failed, but actully on the target server the script execution as success
+
+logs:
+Dec 03 04:55:45 uklvadsb0371 uvicorn[100809]: [agent] Started. BASE_DIR=/opt/airflow_agent, JOB_DIR=/opt/airflow_agent/jobs, TMUX=/usr/bin/tmux
+Dec 03 04:55:45 uklvadsb0371 uvicorn[100809]: INFO:     Application startup complete.
+Dec 03 04:55:45 uklvadsb0371 uvicorn[100809]: INFO:     Uvicorn running on https://0.0.0.0:18443 (Press CTRL+C to quit)
+Dec 03 05:00:03 uklvadsb0371 su[100863]: (to nginxadm) root on none
+Dec 03 05:00:03 uklvadsb0371 su[100863]: pam_unix(su-l:session): session opened for user nginxadm by (uid=0)
+Dec 03 05:01:04 uklvadsb0371 uvicorn[100809]: INFO:     10.193.106.181:52482 - "POST /run HTTP/1.1" 200 OK
+Dec 03 05:05:03 uklvadsb0371 su[100959]: (to nginxadm) root on none
+Dec 03 05:05:03 uklvadsb0371 su[100959]: pam_unix(su-l:session): session opened for user nginxadm by (uid=0)
+Dec 03 05:06:03 uklvadsb0371 uvicorn[100809]: INFO:     10.193.106.181:51748 - "POST /run HTTP/1.1" 200 OK
+Dec 03 05:10:04 uklvadsb0371 su[101046]: (to nginxadm) root on none
+Dec 03 05:10:04 uklvadsb0371 su[101046]: pam_unix(su-l:session): session opened for user nginxadm by (uid=0)
+Dec 03 05:11:04 uklvadsb0371 uvicorn[100809]: INFO:     10.193.106.181:50848 - "POST /run HTTP/1.1" 200 OK
+
+
+[Unit]
+Description=Airflow Unified Agent
+After=network.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/airflow_agent
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/local/bin/uvicorn agent:app \
+  --host 0.0.0.0 \
+  --port 18443 \
+  --ssl-keyfile /opt/airflow_agent/certs/key.pem \
+  --ssl-certfile /opt/airflow_agent/certs/cert.pem
+
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+NoNewPrivileges=no
+
+[Install]
+WantedBy=multi-user.target
+
+root@uklvadsb0371[DEV][jobs] # ls -lrt */
+nginx_test_script__test_job__linux__scheduled__2025-12-03T04_55_00_00_00/:
+total 0
+
+nginx_test_script__test_job__linux__scheduled__2025-12-03T05_00_00_00_00/:
+total 0
+
+nginx_test_script__test_job__linux__scheduled__2025-12-03T05_05_00_00_00/:
+total 0
+
+nginx_test_script__test_job__linux__scheduled__2025-12-03T05_10_00_00_00/:
+total 0
