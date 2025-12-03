@@ -1,175 +1,188 @@
-# ================================
-# Windows Airflow Agent Installer
-# ================================
+<# 
+===============================================
+ Windows Airflow Agent - PowerShell Version
+ TLS 18443, Embedded Token, Task Scheduler Service
+===============================================
+#>
 
-$Base = "C:\airflow_agent"
-$CertPath = "$Base\certs"
-$LogsPath = "$Base\logs"
-$ServiceName = "AirflowWindowsAgent"
+# -------------------------
+# CONFIGURATION
+# -------------------------
 
-Write-Host "[*] Creating directories..."
-New-Item -ItemType Directory -Force -Path $Base | Out-Null
-New-Item -ItemType Directory -Force -Path $CertPath | Out-Null
-New-Item -ItemType Directory -Force -Path $LogsPath | Out-Null
+$AgentPort = 18443
 
-Write-Host "[*] Writing config.json..."
-@"
-{
-  "port": 18443,
-  "token": "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2",
-  "poll_interval": 30
-}
-"@ | Out-File "$Base\config.json" -Encoding UTF8
+# Embedded Token (as requested)
+$AgentToken = "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
 
-Write-Host "[*] Checking for existing certificates..."
-if (!(Test-Path "$CertPath\cert.pem") -or !(Test-Path "$CertPath\key.pem")) {
-    Write-Host "[+] Generating self-signed certificate..."
+$AgentHome = "C:\airflow_agent"
+$CertDir   = "$AgentHome\certs"
+$LogDir    = "$AgentHome\logs"
+$JobDir    = "$AgentHome\jobs"
 
-    $cert = New-SelfSignedCertificate `
-        -DnsName "localhost" `
-        -CertStoreLocation "cert:\LocalMachine\My" `
-        -KeyLength 4096 `
-        -HashAlgorithm SHA256
+# Create directory structure
+New-Item -ItemType Directory -Force -Path $AgentHome,$CertDir,$LogDir,$JobDir | Out-Null
 
-    Export-PfxCertificate -Cert $cert -FilePath "$CertPath\cert.pfx" -Password (ConvertTo-SecureString "pass123" -AsPlainText -Force)
-    openssl pkcs12 -in "$CertPath\cert.pfx" -nocerts -nodes -password pass:pass123 -out "$CertPath\key.pem"
-    openssl pkcs12 -in "$CertPath\cert.pfx" -clcerts -nokeys -password pass:pass123 -out "$CertPath\cert.pem"
+# -------------------------
+# TLS Certificate Handling
+# -------------------------
+$CertPath = "$CertDir\cert.pem"
+$KeyPath  = "$CertDir\key.pem"
+
+if (!(Test-Path $CertPath) -or !(Test-Path $KeyPath)) {
+    Write-Host "ERROR: TLS certificate or key missing in $CertDir"
+    exit 1
 }
 
-Write-Host "[*] Writing agent.ps1..."
-@"
-param()
+# Load certificate
+$Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+$Cert.Import($CertPath)
 
-# ================================
-# Windows Airflow Agent
-# HTTPS + Task Scheduler Backend
-# ================================
+# -------------------------
+# Function: Send JSON Output
+# -------------------------
+function Send-JSON($Response, $Object) {
+    $json = ($Object | ConvertTo-Json -Depth 5)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-\$Base = "C:\airflow_agent"
-\$Config = Get-Content "\$Base\config.json" | ConvertFrom-Json
-\$Token  = \$Config.token
-\$Port   = \$Config.port
-\$Poll   = \$Config.poll_interval
+    $Response.ContentType = "application/json"
+    $Response.ContentLength64 = $bytes.Length
+    $Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    $Response.OutputStream.Close()
+}
 
-\$Listener = New-Object System.Net.HttpListener
-\$Listener.Prefixes.Add("https://+:\$Port/")
-\$Listener.Start()
+# -------------------------
+# JOB MANAGEMENT HELPERS
+# -------------------------
 
-Write-Host "Airflow Agent listening on https://0.0.0.0:\$Port"
-Write-Host "Token: \$Token"
+function Get-JobLogPath($JobID) { return "$JobDir\$JobID.log" }
+function Get-JobExitPath($JobID) { return "$JobDir\$JobID.exit" }
+function Get-JobCmdPath($JobID) {  return "$JobDir\$JobID.ps1" }
 
-while (\$true) {
-    \$ctx  = \$Listener.GetContext()
-    \$req  = \$ctx.Request
-    \$resp = \$ctx.Response
+function Is-JobRunning($JobID) {
+    schtasks /Query /TN $JobID /FO LIST 2>$null | Select-String "Running" | ForEach-Object { return $true }
+    return $false
+}
 
-    # TOKEN CHECK
-    if (\$req.Headers["X-Agent-Token"] -ne \$Token) {
-        \$resp.StatusCode = 401
-        \$resp.Close()
-        continue
-    }
+# -------------------------
+# MAIN AGENT SERVER SCRIPT
+# -------------------------
 
-    function SendJSON(\$obj) {
-        \$json = \$obj | ConvertTo-Json -Depth 10
-        \$buf  = [System.Text.Encoding]::UTF8.GetBytes(\$json)
-        \$resp.ContentType = "application/json"
-        \$resp.OutputStream.Write(\$buf, 0, \$buf.Length)
-        \$resp.Close()
-    }
-
-    switch (\$req.Url.AbsolutePath) {
-
-        "/run" {
-            \$body = (New-Object IO.StreamReader \$req.InputStream).ReadToEnd() | ConvertFrom-Json
-            
-            \$id = \$body.id
-            \$cmd = \$body.command
-            \$RunAs = \$body.run_as_user
-
-            # prevent duplicate run
-            \$existing = schtasks /Query /TN "\$id" 2>&1
-            if (\$existing -notmatch "ERROR") {
-                SendJSON @{ status="duplicate"; message="Job already running" }
-                break
-            }
-
-            # write script to temp
-            \$psFile = "C:\Temp\${id}.cmd.ps1"
-            \$logFile = "C:\airflow_agent\logs\${id}.log"
-            \$exitFile = "C:\Temp\${id}.exit"
+$ScriptPath = "$AgentHome\agent-service.ps1"
 
 @"
-Start-Transcript -Path "$logFile" -Force
-try {
-    $cmd
-    \$exitCode = 0
-} catch {
-    \$_.Exception.Message | Out-File -Encoding utf8 "$logFile" -Append
-    \$exitCode = 1
-}
-Stop-Transcript
-Set-Content "$exitFile" \$exitCode
-exit \$exitCode
-"@ | Out-File \$psFile -Encoding UTF8
+# ============================================
+#   Running Windows Airflow Agent Service
+# ============================================
 
-            # schedule + start
-            schtasks /Create /TN "\$id" /SC ONCE /RU SYSTEM /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \$psFile" /ST 00:00 /F
-            schtasks /Run /TN "\$id"
+`$Listener = New-Object System.Net.HttpListener
+`$Prefix = "https://+:$AgentPort/"
+`$Listener.Prefixes.Add(`$Prefix)
+`$Listener.Start()
 
-            SendJSON @{ status="started"; id=\$id }
+Write-Host "Windows Airflow Agent running on port $AgentPort"
+
+while (`$true) {
+    try {
+        `$Context = `$Listener.GetContext()
+        `$Req = `$Context.Request
+        `$Resp = `$Context.Response
+
+        # Security Check
+        if (-not `$Req.Headers["X-Agent-Token"] -or `$Req.Headers["X-Agent-Token"] -ne "$AgentToken") {
+            Send-JSON `$Resp @{ error="Invalid token" }
+            continue
         }
 
-        "/status" {
-            \$id = \$req.QueryString["id"]
-            \$exitFile = "C:\Temp\${id}.exit"
+        switch (`$Req.Url.AbsolutePath) {
 
-            \$task = schtasks /Query /TN "\$id" 2>&1
-            if (\$task -match "ERROR") {
-                SendJSON @{ finished=\$true; exit_code=1 }
-                break
+            "/run" {
+                `$Body = [IO.StreamReader]::new(`$Req.InputStream).ReadToEnd() | ConvertFrom-Json
+                `$JobID = `$Body.id
+                `$Cmd   = `$Body.command
+
+                if (Is-JobRunning `$JobID) {
+                    Send-JSON `$Resp @{ running=$true }
+                    continue
+                }
+
+                # Write command to PS1 file
+                `$ScriptFile = "$(Get-JobCmdPath $JobID)"
+                `$Cmd | Out-File `$ScriptFile -Encoding UTF8
+
+                # Create log + exit placeholders
+                `$LogFile = "$(Get-JobLogPath $JobID)"
+                `$ExitFile = "$(Get-JobExitPath $JobID)"
+                if (Test-Path `$ExitFile) { Remove-Item `$ExitFile -Force }
+
+                # Create scheduled task
+                schtasks /Create /TN `$JobID /TR "powershell -NoProfile -ExecutionPolicy Bypass -File `"$ScriptFile`"" /SC ONCE /ST 00:00 /RU SYSTEM /F | Out-Null
+                schtasks /Run /TN `$JobID | Out-Null
+
+                Send-JSON `$Resp @{ started=$true }
             }
 
-            if (!(Test-Path \$exitFile)) {
-                SendJSON @{ finished=\$false; exit_code=\$null }
-                break
+            "/status" {
+                `$JobID = `$Req.QueryString["id"]
+                `$ExitFile = "$(Get-JobExitPath $JobID)"
+
+                if (Is-JobRunning `$JobID) {
+                    Send-JSON `$Resp @{ finished=$false }
+                }
+                elseif (Test-Path `$ExitFile) {
+                    `$Code = [int](Get-Content `$ExitFile)
+                    Send-JSON `$Resp @{ finished=$true; exit_code=`$Code }
+                }
+                else {
+                    Send-JSON `$Resp @{ finished=$true; exit_code=1 }
+                }
             }
 
-            \$code = Get-Content \$exitFile
-            schtasks /Delete /TN "\$id" /F | Out-Null
-            SendJSON @{ finished=\$true; exit_code=[int]\$code }
-        }
+            "/logs" {
+                `$JobID = `$Req.QueryString["id"]
+                `$LogFile = "$(Get-JobLogPath $JobID)"
 
-        "/logs" {
-            \$id = \$req.QueryString["id"]
-            \$logFile = "C:\airflow_agent\logs\${id}.log"
-            if (Test-Path \$logFile) {
-                \$data = Get-Content \$logFile -Raw
-                \$bytes = [System.Text.Encoding]::UTF8.GetBytes(\$data)
-                \$resp.ContentType = "text/plain"
-                \$resp.OutputStream.Write(\$bytes,0,\$bytes.Length)
+                if (Test-Path `$LogFile) {
+                    `$Bytes = [IO.File]::ReadAllBytes(`$LogFile)
+                    `$Resp.ContentType = "text/plain"
+                    `$Resp.OutputStream.Write(`$Bytes, 0, `$Bytes.Length)
+                } else {
+                    Send-JSON `$Resp @{ error="No logs found" }
+                }
+                `$Resp.OutputStream.Close()
             }
-            \$resp.Close()
-        }
 
-        default {
-            \$resp.StatusCode = 404
-            \$resp.Close()
+            "/cleanup" {
+                `$JobID = `$Req.QueryString["id"]
+                Remove-Item "$(Get-JobCmdPath $JobID)" -Force -ErrorAction SilentlyContinue
+                Remove-Item "$(Get-JobExitPath $JobID)" -Force -ErrorAction SilentlyContinue
+                Remove-Item "$(Get-JobLogPath $JobID)" -Force -ErrorAction SilentlyContinue
+
+                Send-JSON `$Resp @{ cleaned=$true }
+            }
+
+            default {
+                Send-JSON `$Resp @{ error="Unknown endpoint" }
+            }
         }
     }
+    catch {
+        Write-Host "ERROR: $_"
+    }
 }
-"@ | Out-File "$Base\agent.ps1" -Encoding UTF8
 
-Write-Host "[*] Creating service $ServiceName..."
+"@ | Out-File $ScriptPath -Encoding UTF8
 
-New-Service `
-  -Name $ServiceName `
-  -BinaryPathName "powershell.exe -ExecutionPolicy Bypass -File C:\airflow_agent\agent.ps1" `
-  -DisplayName "Airflow Windows Agent" `
-  -Description "Secure HTTPS agent for Airflow job execution" `
-  -StartupType Automatic
+# -------------------------
+# INSTALL AS SCHEDULED TASK (SERVICE MODE)
+# -------------------------
 
-Start-Service $ServiceName
+$Action = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
 
-Write-Host "`nInstallation complete."
-Write-Host "Agent running on https://0.0.0.0:18443"
+$Trigger = New-ScheduledTaskTrigger -AtStartup
+
+Register-ScheduledTask -TaskName "AirflowAgentService" `
+    -Action $Action -Trigger $Trigger -RunLevel Highest -Force
+
+Write-Host "Airflow Agent Installed Successfully."
+Write-Host "Listening on HTTPS port $AgentPort"
