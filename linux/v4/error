@@ -1,3 +1,17 @@
+Dec  3 03:40:03 uklvadsb0371 uvicorn[95886]: INFO:     10.193.106.181:46754 - "GET /status/a56650bbd786e0c44b8550662eb4fa17c27675ee2fdbc7c4cf7864a1cc62c908 HTTP/1.1" 200 OK
+Dec  3 03:40:03 uklvadsb0371 uvicorn[95886]: INFO:     10.193.106.181:46760 - "POST /run HTTP/1.1" 422 Unprocessable Entity
+
+total 16
+drwxr-xr-x. 2 airflow airflow    6 Dec  2 11:34 log
+drwxr-xr-x. 2 airflow airflow   37 Dec  2 12:37 certs
+-rw-r-----. 1 airflow airflow  856 Dec  2 12:39 config.xml
+-rw-r-----. 1 airflow airflow    0 Dec  2 15:12 agent_unified.py_test
+-rwxr-x---. 1 root    root    9451 Dec  2 15:23 agent.py
+drwxr-xr-x. 2 root    root     106 Dec  2 15:25 __pycache__
+drwxr-xr-x. 2 airflow airflow    6 Dec  2 15:44 jobs
+
+
+
 Environment="PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin"
 Environment="TMPDIR=/tmp"
 Full example:
