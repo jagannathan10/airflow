@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<agent_config>
+
+    <!-- ================================================================= -->
+    <!--  AUTHENTICATION TOKEN (MANDATORY)                                 -->
+    <!-- ================================================================= -->
+    <!-- This token must match Airflow Connection extra={"agent_token": "..."} -->
+    <token>scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2</token>
+
+
+    <!-- ================================================================= -->
+    <!--  AGENT NETWORK LISTENING                                          -->
+    <!-- ================================================================= -->
+    <!-- Where the agent listens (Uvicorn will read this) -->
+    <listen_host>0.0.0.0</listen_host>
+    <listen_port>18443</listen_port>
+
+
+    <!-- ================================================================= -->
+    <!--  ALLOWED IPS (Supports CIDR + Single IP)                          -->
+    <!-- ================================================================= -->
+    <!-- If empty → the agent allows all IPs (NOT recommended for prod) -->
+    <allowed_ips>
+        <!-- Single IP examples -->
+        <ip>10.193.106.181</ip>        <!-- Airflow Scheduler -->
+        <ip>10.193.106.182</ip>        <!-- Airflow Webserver -->
+
+        <!-- CIDR Ranges -->
+        <cidr>10.193.0.0/16</cidr>
+        <cidr>192.168.120.0/24</cidr>
+    </allowed_ips>
+
+
+    <!-- ================================================================= -->
+    <!--  COMMAND BLACKLIST (Security Hardening)                           -->
+    <!-- ================================================================= -->
+    <!-- Prevent dangerous commands even if Airflow misconfigured -->
+    <command_blacklist>
+        <cmd>shutdown</cmd>
+        <cmd>reboot</cmd>
+        <cmd>poweroff</cmd>
+        <cmd>halt</cmd>
+        <cmd>init 0</cmd>
+        <cmd>rm -rf /</cmd>
+        <cmd>mkfs</cmd>
+        <cmd>:(){ :|:& };:</cmd>  <!-- fork bomb -->
+    </command_blacklist>
+
+
+    <!-- ================================================================= -->
+    <!--  RATE LIMITING (Avoid flooding agent)                             -->
+    <!-- ================================================================= -->
+    <rate_limit>
+        <window_seconds>60</window_seconds>
+        <max_requests>120</max_requests>  <!-- per IP per minute -->
+    </rate_limit>
+
+
+    <!-- ================================================================= -->
+    <!--  TLS CONFIGURATION (SERVER SIDE)                                  -->
+    <!-- ================================================================= -->
+    <!-- These files must exist and be readable by systemd user (root) -->
+    <tls>
+        <server_cert>/opt/airflow_agent/certs/cert.pem</server_cert>
+        <server_key>/opt/airflow_agent/certs/key.pem</server_key>
+    </tls>
+
+</agent_config>
