@@ -1,311 +1,350 @@
 #!/usr/bin/env python3
+# -------------------------------------------------------------------------
+# Unified Airflow Agent (TMUX-only, parallel-safe, config.xml-driven)
+# -------------------------------------------------------------------------
+
 import os
-import uuid
 import subprocess
 import time
 import ipaddress
+import threading
 import xml.etree.ElementTree as ET
+
 from datetime import datetime
 from typing import Optional, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import threading
 
-# ============================================================================
-# CONFIG
-# ============================================================================
+# -------------------------------------------------------------------------
+# CONSTANTS
+# -------------------------------------------------------------------------
 
 BASE_DIR = "/opt/airflow_agent"
-CONFIG_FILE = os.path.join(BASE_DIR, "config.xml")
-JOB_DIR = os.path.join(BASE_DIR, "jobs")
+JOB_DIR = f"{BASE_DIR}/jobs"
+CONFIG_FILE = f"{BASE_DIR}/config.xml"
+TMUX_BIN = "/usr/bin/tmux"
+
 os.makedirs(JOB_DIR, exist_ok=True)
+
+# -------------------------------------------------------------------------
+# RUNTIME CONFIG (populated from config.xml)
+# -------------------------------------------------------------------------
 
 CONFIG = {
     "token": None,
-    "listen_host": "0.0.0.0",
-    "listen_port": 18443,
-    "allowed_ips": [],         # single IP entries
-    "allowed_cidrs": [],       # CIDR ranges
+    "allowed_ips": [],
     "command_blacklist": [],
     "rate_limit_window": 60,
-    "rate_limit_max": 200,
-    "tls_cert": None,
-    "tls_key": None,
+    "rate_limit_max": 120,
 }
 
-RATE_STATE = {}         # rate limit in-memory
-CONFIG_MTIME = None     # config reload tracking
+RATE_TRACKER = {}   # { ip: [timestamps] }
 
-app = FastAPI(title="Unified Airflow Agent with Reload & CIDR Support")
+# -------------------------------------------------------------------------
+# FASTAPI INIT
+# -------------------------------------------------------------------------
+
+app = FastAPI(title="Unified Airflow Agent (Config-enabled)")
 
 
-# ============================================================================
-# CONFIG PARSING
-# ============================================================================
+# -------------------------------------------------------------------------
+# CONFIG LOADER
+# -------------------------------------------------------------------------
 
 def load_config():
-    """Load config.xml with IP + CIDR support and store mtime."""
-    global CONFIG, CONFIG_MTIME
+    global CONFIG
 
     if not os.path.exists(CONFIG_FILE):
-        print("[agent] No config.xml found")
+        print("[CONFIG] No config.xml found. Using defaults.")
         return
 
-    stat = os.stat(CONFIG_FILE)
-    if CONFIG_MTIME == stat.st_mtime:
-        return  # no change
+    try:
+        tree = ET.parse(CONFIG_FILE)
+        root = tree.getroot()
 
-    CONFIG_MTIME = stat.st_mtime
+        # TOKEN
+        token = root.findtext("token")
+        if token:
+            CONFIG["token"] = token.strip()
 
-    print(f"[agent] Loading configuration from {CONFIG_FILE}")
-
-    tree = ET.parse(CONFIG_FILE)
-    root = tree.getroot()
-
-    def get(tag, default=None):
-        node = root.find(tag)
-        return node.text.strip() if node is not None and node.text else default
-
-    CONFIG["token"] = get("token", None)
-    CONFIG["listen_host"] = get("listen_host", "0.0.0.0")
-    CONFIG["listen_port"] = int(get("listen_port", 18443))
-
-    # IP + CIDR rules
-    CONFIG["allowed_ips"] = []
-    CONFIG["allowed_cidrs"] = []
-
-    ip_node = root.find("allowed_ips")
-    if ip_node is not None:
-        for node in ip_node:
-            if node.tag == "ip":
+        # ALLOWED IPs + CIDR
+        CONFIG["allowed_ips"] = []
+        aip = root.find("allowed_ips")
+        if aip is not None:
+            for node in aip:
                 CONFIG["allowed_ips"].append(node.text.strip())
-            elif node.tag == "cidr":
-                try:
-                    CONFIG["allowed_cidrs"].append(
-                        ipaddress.ip_network(node.text.strip(), strict=False)
-                    )
-                except Exception as e:
-                    print(f"[agent] Invalid CIDR: {node.text} ({e})")
 
-    # Command blacklist
-    CONFIG["command_blacklist"] = []
-    bl_node = root.find("command_blacklist")
-    if bl_node is not None:
-        for cmd in bl_node.findall("cmd"):
-            CONFIG["command_blacklist"].append(cmd.text.strip())
+        # COMMAND BLACKLIST
+        CONFIG["command_blacklist"] = []
+        bl = root.find("command_blacklist")
+        if bl is not None:
+            for cmd in bl:
+                CONFIG["command_blacklist"].append(cmd.text.strip())
 
-    # Rate limit
-    rl = root.find("rate_limit")
-    if rl is not None:
-        w = rl.find("window_seconds")
-        m = rl.find("max_requests")
-        CONFIG["rate_limit_window"] = int(w.text.strip()) if w is not None else 60
-        CONFIG["rate_limit_max"] = int(m.text.strip()) if m is not None else 200
+        # RATE-LIMIT
+        rl = root.find("rate_limit")
+        if rl is not None:
+            ws = rl.findtext("window_seconds")
+            mx = rl.findtext("max_requests")
+            CONFIG["rate_limit_window"] = int(ws) if ws else 60
+            CONFIG["rate_limit_max"] = int(mx) if mx else 120
 
-    # TLS
-    tls = root.find("tls")
-    if tls is not None:
-        cert = tls.find("server_cert")
-        key = tls.find("server_key")
-        CONFIG["tls_cert"] = cert.text.strip() if cert is not None else None
-        CONFIG["tls_key"] = key.text.strip() if key is not None else None
+        print("[CONFIG] Loaded config.xml successfully")
 
-    print("[agent] Config loaded successfully:")
-    print(CONFIG)
+    except Exception as e:
+        print(f"[CONFIG] ERROR loading config.xml: {e}")
 
 
-def config_auto_reloader():
+def config_auto_reload():
     """Reload config.xml every 30 seconds."""
     while True:
-        try:
-            load_config()
-        except Exception as e:
-            print(f"[agent] Config reload error: {e}")
         time.sleep(30)
+        load_config()
 
 
-threading.Thread(target=config_auto_reloader, daemon=True).start()
+# Start background config reload
+threading.Thread(target=config_auto_reload, daemon=True).start()
+load_config()
 
 
-# ============================================================================
-# SECURITY CHECKS
-# ============================================================================
+# -------------------------------------------------------------------------
+# SECURITY HELPERS
+# -------------------------------------------------------------------------
 
-def check_ip_allowed(request: Request):
-    client_ip = ipaddress.ip_address(request.client.host)
+def ip_allowed(ip: str) -> bool:
+    """Validate IP against allow-list with CIDR support."""
+    if not CONFIG["allowed_ips"]:
+        return True  # allow all if not configured
 
-    # Allow any IP if allow-list empty
-    if not CONFIG["allowed_ips"] and not CONFIG["allowed_cidrs"]:
-        return
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+    except:
+        return False
 
-    # Check single-IP allow list
-    if request.client.host in CONFIG["allowed_ips"]:
-        return
+    for entry in CONFIG["allowed_ips"]:
+        entry = entry.strip()
+        if "/" in entry:
+            # CIDR
+            try:
+                if ip_obj in ipaddress.ip_network(entry, strict=False):
+                    return True
+            except:
+                pass
+        else:
+            # Single IP
+            if ip == entry:
+                return True
 
-    # Check CIDR groups
-    for cidr in CONFIG["allowed_cidrs"]:
-        if client_ip in cidr:
-            return
-
-    raise Exception(f"IP {client_ip} not allowed")
-
-
-async def validate_token(request: Request):
-    token = CONFIG["token"]
-    if not token:
-        return
-    provided = request.headers.get("X-Agent-Token")
-    if provided != token:
-        raise Exception("Invalid token")
+    return False
 
 
-def check_blacklist(command: str):
+def is_blocked_command(cmd: str) -> bool:
     for bad in CONFIG["command_blacklist"]:
-        if bad in command:
-            raise Exception(f"Blocked command pattern: {bad}")
+        if bad.lower() in cmd.lower():
+            return True
+    return False
 
 
-def check_rate_limit(request: Request):
-    ip = request.client.host
+def rate_limited(ip: str) -> bool:
+    """Simple in-memory rate limiting."""
     now = time.time()
     window = CONFIG["rate_limit_window"]
-    max_req = CONFIG["rate_limit_max"]
+    maxreq = CONFIG["rate_limit_max"]
 
-    ts = RATE_STATE.get(ip, [])
-    ts = [t for t in ts if now - t < window]
-    ts.append(now)
-    RATE_STATE[ip] = ts
+    RATE_TRACKER.setdefault(ip, [])
+    RATE_TRACKER[ip] = [t for t in RATE_TRACKER[ip] if now - t < window]
 
-    if len(ts) > max_req:
-        raise Exception("Rate limit exceeded")
+    if len(RATE_TRACKER[ip]) >= maxreq:
+        return True
 
-
-# ============================================================================
-# JOB EXECUTION
-# ============================================================================
-
-class JobRequest(BaseModel):
-    command: str
-    run_as_user: Optional[str] = None
-    job_id: Optional[str] = None
-    use_tmux: bool = True
-    skip_if_running: bool = True
-    fire_and_forget: bool = False
-    env: Dict[str, str] = {}
+    RATE_TRACKER[ip].append(now)
+    return False
 
 
-def write_file(path, content):
+async def enforce_security(request: Request, payload_command: Optional[str] = None):
+    # IP CHECK
+    client_ip = request.client.host
+    if not ip_allowed(client_ip):
+        return JSONResponse({"error": "IP_DENIED", "ip": client_ip}, status_code=403)
+
+    # RATE LIMIT
+    if rate_limited(client_ip):
+        return JSONResponse({"error": "RATE_LIMIT"}, status_code=429)
+
+    # TOKEN CHECK
+    if CONFIG["token"]:
+        header = request.headers.get("X-Agent-Token")
+        if header != CONFIG["token"]:
+            return JSONResponse({"error": "INVALID_TOKEN"}, status_code=403)
+
+    # BLACKLIST CHECK
+    if payload_command and is_blocked_command(payload_command):
+        return JSONResponse({"error": "COMMAND_BLOCKED"}, status_code=403)
+
+    return None
+
+
+# -------------------------------------------------------------------------
+# HELPERS
+# -------------------------------------------------------------------------
+
+def write(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         f.write(str(content))
 
 
-def read_file(path):
-    try:
-        with open(path) as f:
-            return f.read()
-    except:
-        return None
+def read(path, default=""):
+    if os.path.exists(path):
+        return open(path).read()
+    return default
 
 
-def build_script(job_id, req: JobRequest):
-    job_path = os.path.join(JOB_DIR, job_id)
+def tmux_session_name(job_id):
+    return f"agent_{job_id}"
+
+
+def is_tmux_alive(job_id):
+    session = tmux_session_name(job_id)
+    return subprocess.call(
+        [TMUX_BIN, "has-session", "-t", session],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    ) == 0
+
+
+# -------------------------------------------------------------------------
+# REQUEST MODEL
+# -------------------------------------------------------------------------
+
+class JobRequest(BaseModel):
+    command: str
+    run_as_user: Optional[str] = None
+    job_id: str
+    skip_if_running: bool = True
+    fire_and_forget: bool = False
+    env: Dict[str, str] = {}
+    timeout_seconds: Optional[int] = None
+
+
+# -------------------------------------------------------------------------
+# JOB EXECUTION
+# -------------------------------------------------------------------------
+
+def build_script(job_id: str, payload: JobRequest):
+
+    job_path = f"{JOB_DIR}/{job_id}"
     os.makedirs(job_path, exist_ok=True)
 
-    out = f"{job_path}/stdout.log"
-    err = f"{job_path}/stderr.log"
-    exitf = f"{job_path}/exit"
+    stdout = f"{job_path}/stdout.log"
+    stderr = f"{job_path}/stderr.log"
+    exit_file = f"{job_path}/exit"
     status = f"{job_path}/status"
 
-    write_file(status, "running")
+    write(status, "starting")
 
-    if req.run_as_user:
-        esc = req.command.replace("'", "'\"'\"'")
-        run = f"su - {req.run_as_user} -c '{esc}'"
+    if payload.run_as_user:
+        escaped = payload.command.replace("'", "'\"'\"'")
+        run_line = f"su - {payload.run_as_user} -c '{escaped}'"
     else:
-        run = req.command
+        run_line = payload.command
 
-    script = f"""#!/bin/bash
+    script = f"{job_path}/run.sh"
+    with open(script, "w") as f:
+        f.write(f"""#!/bin/bash
 set -o pipefail
-{run} >> "{out}" 2>> "{err}"
-echo $? > "{exitf}"
+{run_line} >> "{stdout}" 2>> "{stderr}"
+RC=$?
+echo $RC > "{exit_file}"
 echo finished > "{status}"
-"""
+""")
 
-    sp = f"{job_path}/run.sh"
-    with open(sp, "w") as f:
-        f.write(script)
-    os.chmod(sp, 0o755)
-    return sp
+    os.chmod(script, 0o755)
+    return script
 
 
-def execute_job(job_id, req: JobRequest):
-    script = build_script(job_id, req)
+def run_job(job_id: str, payload: JobRequest):
+    script = build_script(job_id, payload)
+    session = tmux_session_name(job_id)
 
-    if req.use_tmux:
-        session = f"agent_{job_id}"
-        subprocess.Popen(["/usr/bin/tmux", "new-session", "-d", "-s", session, script])
-    else:
-        subprocess.Popen(["/bin/bash", script])
+    subprocess.call([
+        TMUX_BIN, "new-session", "-d",
+        "-s", session,
+        "bash", "-lc", f"'{script}'"
+    ])
+
+    write(f"{JOB_DIR}/{job_id}/status", "running")
 
 
-# ============================================================================
+# -------------------------------------------------------------------------
 # API
-# ============================================================================
+# -------------------------------------------------------------------------
 
-@app.post("/reload_config")
-async def reload_config_api(request: Request):
-    await validate_token(request)
-    load_config()
-    return {"status": "reloaded"}
+@app.post("/ping")
+async def ping(req: Request):
+    sec = await enforce_security(req)
+    if sec:
+        return sec
+    return {"status": "ok", "time": datetime.utcnow().isoformat()}
 
 
 @app.post("/run")
-async def run_job(request: Request, req: JobRequest):
-    check_ip_allowed(request)
-    check_rate_limit(request)
-    await validate_token(request)
-    check_blacklist(req.command)
+async def run(req: Request, payload: JobRequest):
+    sec = await enforce_security(req, payload.command)
+    if sec:
+        return sec
 
-    job_id = req.job_id or str(uuid.uuid4())
-    statusfile = os.path.join(JOB_DIR, job_id, "status")
+    job_id = payload.job_id
 
-    if req.skip_if_running and os.path.exists(statusfile):
-        if (read_file(statusfile) or "").strip() == "running":
-            return {"job_id": job_id, "status": "already_running"}
+    # parallel-safe dedup
+    if payload.skip_if_running and is_tmux_alive(job_id):
+        return {"job_id": job_id, "status": "already_running"}
 
-    execute_job(job_id, req)
+    run_job(job_id, payload)
     return {"job_id": job_id, "status": "submitted"}
 
 
 @app.get("/status/{job_id}")
-async def get_status(job_id: str):
-    jsp = os.path.join(JOB_DIR, job_id)
-    if not os.path.exists(jsp):
-        return {"status": "unknown"}
+async def status(req: Request, job_id: str):
+    sec = await enforce_security(req)
+    if sec:
+        return sec
 
-    status = read_file(f"{jsp}/status") or "running"
-    rc = read_file(f"{jsp}/exit")
+    job_path = f"{JOB_DIR}/{job_id}"
+
+    status = read(f"{job_path}/status", "unknown").strip()
+    exit_code = read(f"{job_path}/exit")
+
+    if exit_code:
+        try:
+            exit_code = int(exit_code)
+        except:
+            exit_code = None
 
     return {
         "job_id": job_id,
-        "status": status.strip(),
-        "return_code": int(rc) if rc else None,
-        "stdout": read_file(f"{jsp}/stdout.log") or "",
-        "stderr": read_file(f"{jsp}/stderr.log") or "",
+        "status": status,
+        "return_code": exit_code,
+        "stdout": read(f"{job_path}/stdout.log", ""),
+        "stderr": read(f"{job_path}/stderr.log", ""),
     }
 
 
 @app.post("/cancel/{job_id}")
-async def cancel_job(request: Request, job_id: str):
-    check_ip_allowed(request)
-    check_rate_limit(request)
-    await validate_token(request)
+async def cancel(req: Request, job_id: str):
+    sec = await enforce_security(req)
+    if sec:
+        return sec
 
-    session = f"agent_{job_id}"
-    subprocess.call(["/usr/bin/tmux", "kill-session", "-t", session])
+    session = tmux_session_name(job_id)
+    subprocess.call([TMUX_BIN, "kill-session", "-t", session])
 
-    write_file(os.path.join(JOB_DIR, job_id, "status"), "cancelled")
+    write(f"{JOB_DIR}/{job_id}/status", "cancelled")
     return {"job_id": job_id, "status": "cancelled"}
+
+
+@app.on_event("startup")
+def startup():
+    print(f"[AGENT] Started. BASE_DIR={BASE_DIR}, JOB_DIR={JOB_DIR}, TMUX={TMUX_BIN}")
