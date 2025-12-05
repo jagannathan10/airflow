@@ -10,6 +10,7 @@ import subprocess
 import threading
 from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
+from typing import Optional, Dict  # <-- added
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -73,7 +74,8 @@ app = FastAPI(title="Universal Airflow Agent")
 
 def read_file(path, default=""):
     try:
-        return open(path).read()
+        with open(path) as f:
+            return f.read()
     except:
         return default
 
@@ -162,11 +164,11 @@ def check_rate_limit(ip):
 # ============================================================================
 class JobRequest(BaseModel):
     command: str
-    run_as_user: str | None = None
+    run_as_user: Optional[str] = None   # <-- fixed
     job_id: str
     skip_if_running: bool = True
     fire_and_forget: bool = False
-    env: dict = {}
+    env: Dict[str, str] = {}
     use_tmux: bool = True
 
 
