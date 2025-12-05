@@ -1,0 +1,45 @@
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]: [AGENT] config.xml loaded
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]: [AGENT] config.xml loaded
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]: Traceback (most recent call last):
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/bin/uvicorn", line 7, in <module>
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     sys.exit(main())
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/click/core.py", line 1161, in __call__
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return self.main(*args, **kwargs)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/click/core.py", line 1082, in main
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     rv = self.invoke(ctx)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/click/core.py", line 1443, in invoke
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return ctx.invoke(self.callback, **ctx.params)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/click/core.py", line 788, in invoke
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return __callback(*args, **kwargs)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/main.py", line 423, in main
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     run(
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/main.py", line 593, in run
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     server.run()
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/server.py", line 67, in run
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/_compat.py", line 60, in asyncio_run
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return loop.run_until_complete(main)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/server.py", line 71, in serve
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     await self._serve(sockets)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/server.py", line 78, in _serve
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     config.load()
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/config.py", line 439, in load
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     self.loaded_app = import_from_string(self.app)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/local/lib/python3.9/site-packages/uvicorn/importer.py", line 19, in import_from_string
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     module = importlib.import_module(module_str)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/usr/lib64/python3.9/importlib/__init__.py", line 127, in import_module
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     return _bootstrap._gcd_import(name[level:], package, level)
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/opt/airflow_agent/agent.py", line 163, in <module>
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     class JobRequest(BaseModel):
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:   File "/opt/airflow_agent/agent.py", line 165, in JobRequest
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]:     run_as_user: str | None = None
+Dec 05 04:10:17 uklvadsb0371 uvicorn[129096]: TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+Dec 05 04:10:17 uklvadsb0371 systemd[1]: airflow-agent.service: Main process exited, code=exited, status=1/FAILURE
+Dec 05 04:10:17 uklvadsb0371 systemd[1]: airflow-agent.service: Failed with result 'exit-code'.
