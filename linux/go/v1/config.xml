@@ -1,0 +1,28 @@
+# ======================================================================
+#  Universal Airflow Remote Agent - Configuration File
+# ======================================================================
+
+listen:
+  host: "0.0.0.0"
+  port: 18443
+
+tls:
+  server_cert: "/home/almalinux/cert.pem"
+  server_key: "/home/almalinux/key.pem"
+
+# If empty/missing, agent uses built-in fallback token
+
+allowed_ips:
+
+command_blacklist:
+  - "shutdown"
+  - "reboot"
+  - "rm -rf /"
+  - "mkfs "
+  - ":(){ :|:& };:"
+
+rate_limit:
+  window_seconds: 60
+  max_requests: 120
+
+retention_days: 60
