@@ -2,14 +2,14 @@ Here is your full, production-ready RPM SPEC file + systemd service for the Go-b
 
 This SPEC file:
 
-✔ Builds your Go agent binary
-✔ Installs under /opt/airflow_agent
-✔ Installs config.xml, certs/, and job directory
-✔ Installs systemd unit file
-✔ Sets ownership to root:root
-✔ Enables & starts the service automatically
-✔ Strips binary for smaller size
-✔ Macro-safe for both EL8 & EL9
+        ✔ Builds your Go agent binary
+        ✔ Installs under /opt/airflow_agent
+        ✔ Installs config.xml, certs/, and job directory
+        ✔ Installs systemd unit file
+        ✔ Sets ownership to root:root
+        ✔ Enables & starts the service automatically
+        ✔ Strips binary for smaller size
+        ✔ Macro-safe for both EL8 & EL9
 
 ✅ 1. Directory Layout (final installed structure)
         /opt/airflow_agent/
