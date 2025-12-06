@@ -1,3 +1,5 @@
+token: "scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
 Nice, we’re at the packaging + hardening stage now 😎
 Here’s a complete bundle:
 
