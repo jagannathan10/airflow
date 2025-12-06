@@ -114,44 +114,50 @@ Place this in:
 
 SOURCES/airflow-agent.service
 
-[Unit]
-Description=Universal Airflow Remote Agent (Go TMUX Agent)
-After=network.target
-Wants=network-online.target
-
-[Service]
-User=root
-Group=root
-WorkingDirectory=/opt/airflow_agent
-
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin"
-ExecStart=/opt/airflow_agent/agent \
-    --config /opt/airflow_agent/config.xml
-
-Restart=always
-RestartSec=5
-NoNewPrivileges=no
-PrivateTmp=no
+        [Unit]
+        Description=Universal Airflow Remote Agent (Go TMUX Agent)
+        After=network.target
+        Wants=network-online.target
+        
+        [Service]
+        User=root
+        Group=root
+        WorkingDirectory=/opt/airflow_agent
+        
+        Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin"
+        ExecStart=/opt/airflow_agent/agent \
+            --config /opt/airflow_agent/config.xml
+        
+        Restart=always
+        RestartSec=5
+        NoNewPrivileges=no
+        PrivateTmp=no
 
 [Install]
 WantedBy=multi-user.target
 
 ✅ 4. Build Instructions
+
 Step 1 — Prepare folder structure:
-mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+        mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 Step 2 — Place files:
-cp agent.go ~/rpmbuild/SOURCES/
-cp config.xml ~/rpmbuild/SOURCES/
-cp airflow-agent.service ~/rpmbuild/SOURCES/
+
+        cp agent.go ~/rpmbuild/SOURCES/
+        cp config.xml ~/rpmbuild/SOURCES/
+        cp airflow-agent.service ~/rpmbuild/SOURCES/
 
 Step 3 — Create tarball:
-cd ~/rpmbuild/SOURCES
-tar -czf agent.tar.gz agent.go config.xml airflow-agent.service
+
+        cd ~/rpmbuild/SOURCES
+        tar -czf agent.tar.gz agent.go config.xml airflow-agent.service
 
 Step 4 — Build RPM:
-rpmbuild -ba ~/rpmbuild/SPECS/airflow-agent.spec
+
+        rpmbuild -ba ~/rpmbuild/SPECS/airflow-agent.spec
 
 Step 5 — Install:
-rpm -ivh ~/rpmbuild/RPMS/x86_64/airflow-agent-1.0.0-1.el8.x86_64.rpm
-systemctl enable --now airflow-agent
+
+        rpm -ivh ~/rpmbuild/RPMS/x86_64/airflow-agent-1.0.0-1.el8.x86_64.rpm
+        systemctl enable --now airflow-agent
