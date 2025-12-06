@@ -30,82 +30,83 @@ Save this file as:
 SPECS/airflow-agent.spec
 
 📦 FINAL airflow-agent.spec (RHEL8/RHEL9 SAFE)
-Name:           airflow-agent
-Version:        1.0.0
-Release:        1%{?dist}
-Summary:        Universal Airflow Remote Agent (TMUX-based)
 
-License:        MIT
-URL:            https://example.com/airflow-agent
-Source0:        agent.tar.gz
-
-BuildRequires:  golang
-Requires:       tmux
-Requires(pre):  shadow-utils
-Requires(post): systemd
-Requires(preun): systemd
-Requires(postun): systemd
-
-%description
-A universal Go-based remote execution agent for Apache Airflow.
-Supports:
- - TMUX long-running jobs
- - CIDR allowlists
- - Command blacklist
- - Rate limiting
- - Auto reload config.xml
- - RHEL8 / RHEL9 compatible
-
-%prep
-%setup -q -n agent
-
-%build
-# Build Go binary
-export GOPATH=%{_builddir}/gopath
-export GOCACHE=%{_builddir}/gocache
-
-go build -ldflags="-s -w" -o airflow-agent .
-
-%install
-mkdir -p %{buildroot}/opt/airflow_agent
-mkdir -p %{buildroot}/opt/airflow_agent/certs
-mkdir -p %{buildroot}/opt/airflow_agent/jobs
-
-# Install binary
-install -m 0755 airflow-agent %{buildroot}/opt/airflow_agent/agent
-
-# Install config.xml (if provided)
-if [ -f config.xml ]; then
-    install -m 0644 config.xml %{buildroot}/opt/airflow_agent/config.xml
-fi
-
-# Install systemd service
-mkdir -p %{buildroot}%{_unitdir}
-install -m 0644 airflow-agent.service %{buildroot}%{_unitdir}/airflow-agent.service
-
-
-%pre
-# Ensure directory exists
-mkdir -p /opt/airflow_agent/jobs
-exit 0
-
-%post
-# Enable and start service
-%systemd_post airflow-agent.service
-
-%preun
-%systemd_preun airflow-agent.service
-
-%postun
-%systemd_postun_with_restart airflow-agent.service
-
-%files
-/opt/airflow_agent/
-/usr/lib/systemd/system/airflow-agent.service
-
-%changelog
-* Thu Dec 05 2025 ChatGPT <admin@example.com> - 1.0.0-1
-- Initial RPM Release
+                Name:           airflow-agent
+                Version:        1.0.0
+                Release:        1%{?dist}
+                Summary:        Universal Airflow Remote Agent (TMUX-based)
+                
+                License:        MIT
+                URL:            https://example.com/airflow-agent
+                Source0:        agent.tar.gz
+                
+                BuildRequires:  golang
+                Requires:       tmux
+                Requires(pre):  shadow-utils
+                Requires(post): systemd
+                Requires(preun): systemd
+                Requires(postun): systemd
+                
+                %description
+                A universal Go-based remote execution agent for Apache Airflow.
+                Supports:
+                 - TMUX long-running jobs
+                 - CIDR allowlists
+                 - Command blacklist
+                 - Rate limiting
+                 - Auto reload config.xml
+                 - RHEL8 / RHEL9 compatible
+                
+                %prep
+                %setup -q -n agent
+                
+                %build
+                # Build Go binary
+                export GOPATH=%{_builddir}/gopath
+                export GOCACHE=%{_builddir}/gocache
+                
+                go build -ldflags="-s -w" -o airflow-agent .
+                
+                %install
+                mkdir -p %{buildroot}/opt/airflow_agent
+                mkdir -p %{buildroot}/opt/airflow_agent/certs
+                mkdir -p %{buildroot}/opt/airflow_agent/jobs
+                
+                # Install binary
+                install -m 0755 airflow-agent %{buildroot}/opt/airflow_agent/agent
+                
+                # Install config.xml (if provided)
+                if [ -f config.xml ]; then
+                    install -m 0644 config.xml %{buildroot}/opt/airflow_agent/config.xml
+                fi
+                
+                # Install systemd service
+                mkdir -p %{buildroot}%{_unitdir}
+                install -m 0644 airflow-agent.service %{buildroot}%{_unitdir}/airflow-agent.service
+                
+                
+                %pre
+                # Ensure directory exists
+                mkdir -p /opt/airflow_agent/jobs
+                exit 0
+                
+                %post
+                # Enable and start service
+                %systemd_post airflow-agent.service
+                
+                %preun
+                %systemd_preun airflow-agent.service
+                
+                %postun
+                %systemd_postun_with_restart airflow-agent.service
+                
+                %files
+                /opt/airflow_agent/
+                /usr/lib/systemd/system/airflow-agent.service
+                
+                %changelog
+                * Thu Dec 05 2025 ChatGPT <admin@example.com> - 1.0.0-1
+                - Initial RPM Release
 
 ✅ 3. Systemd Unit File (install as airflow-agent.service)
 
