@@ -12,15 +12,16 @@ This SPEC file:
         ✔ Macro-safe for both EL8 & EL9
 
 ✅ 1. Directory Layout (final installed structure)
-        /opt/airflow_agent/
-            agent          <-- compiled Go binary
-            config.xml
-            jobs/          <-- auto-created
-            certs/
-                cert.pem
-                key.pem
 
-/usr/lib/systemd/system/airflow-agent.service
+                /opt/airflow_agent/
+                    agent          <-- compiled Go binary
+                    config.xml
+                    jobs/          <-- auto-created
+                    certs/
+                        cert.pem
+                        key.pem
+
+                /usr/lib/systemd/system/airflow-agent.service
 
 ✅ 2. Create the RPM SPEC file
 
