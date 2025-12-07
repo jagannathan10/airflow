@@ -1,5 +1,22 @@
 curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://192.168.120.137:18443/ping
 
+
+curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://10.198.238.128:18443/ping
+*   Trying 10.198.238.128:18443...
+* Connected to 10.198.238.128 (10.198.238.128) port 18443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+*  CAfile: /etc/pki/tls/certs/ca-bundle.crt
+* TLSv1.0 (OUT), TLS header, Certificate Status (22):
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* (5454) (IN), , Unknown (72):
+* TLSv1.0 (OUT), TLS header, Unknown (21):
+* TLSv1.3 (OUT), TLS alert, record overflow (534):
+* error:0A0000C6:SSL routines::packet length too long
+* Closing connection 0
+curl: (35) error:0A0000C6:SSL routines::packet length too long
+
+
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
