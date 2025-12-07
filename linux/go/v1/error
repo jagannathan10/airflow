@@ -1,3 +1,5 @@
+curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://192.168.120.137:18443/ping
+
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
 452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
