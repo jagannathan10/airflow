@@ -1,0 +1,100 @@
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000},  <unfinished ...>
+452012 <... socket resumed>)            = -1 EAFNOSUPPORT (Address family not supported by protocol)
+452012 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_TCP <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 getpid()                         = 452012
+452013 tgkill(452012, 452012, SIGURG)   = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=20000}, NULL) = 0
+452012 <... socket resumed>)            = -1 EAFNOSUPPORT (Address family not supported by protocol)
+452013 nanosleep({tv_sec=0, tv_nsec=20000},  <unfinished ...>
+452012 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=452012, si_uid=0} ---
+452012 rt_sigreturn({mask=[]})          = -1 EAFNOSUPPORT (Address family not supported by protocol)
+452013 <... nanosleep resumed>NULL)     = 0
+452012 futex(0xc000080158, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+452013 nanosleep({tv_sec=0, tv_nsec=20000},  <unfinished ...>
+452012 <... futex resumed>)             = 1
+452016 <... futex resumed>)             = 0
+452012 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_MPTCP <unfinished ...>
+452016 futex(0xc000080158, FUTEX_WAIT_PRIVATE, 0, NULL <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452013 nanosleep({tv_sec=0, tv_nsec=40000},  <unfinished ...>
+452012 <... socket resumed>)            = -1 ENOPROTOOPT (Protocol not available)
+452012 uname( <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452012 <... uname resumed>{sysname="Linux", nodename="uklvadsb0128", ...}) = 0
+452013 nanosleep({tv_sec=0, tv_nsec=80000},  <unfinished ...>
+452012 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_MPTCP) = -1 ENOPROTOOPT (Protocol not available)
+452012 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 3
+452012 openat(AT_FDCWD, "/proc/sys/net/core/somaxconn", O_RDONLY|O_CLOEXEC <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452013 nanosleep({tv_sec=0, tv_nsec=160000},  <unfinished ...>
+452012 <... openat resumed>)            = 6
+452012 fcntl(6, F_GETFL)                = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+452012 fcntl(6, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+452012 epoll_ctl(4, EPOLL_CTL_ADD, 6, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2650800132, u64=9210045430295953412}}) = 0
+452015 <... epoll_pwait resumed>[{events=EPOLLIN|EPOLLOUT, data={u32=2650800132, u64=9210045430295953412}}], 128, 9999, NULL, 0) = 1
+452012 read(6,  <unfinished ...>
+452015 epoll_pwait(4,  <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452013 nanosleep({tv_sec=0, tv_nsec=320000},  <unfinished ...>
+452012 <... read resumed>"65535\n", 65536) = 6
+452012 read(6, "", 65530)               = 0
+452012 epoll_ctl(4, EPOLL_CTL_DEL, 6, 0xc0001498b4) = 0
+452012 close(6)                         = 0
+452012 setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+452012 bind(3, {sa_family=AF_INET, sin_port=htons(18443), sin_addr=inet_addr("0.0.0.0")}, 16) = 0
+452012 listen(3, 65535 <unfinished ...>
+452013 <... nanosleep resumed>NULL)     = 0
+452012 <... listen resumed>)            = 0
+452013 nanosleep({tv_sec=0, tv_nsec=640000},  <unfinished ...>
+452012 epoll_ctl(4, EPOLL_CTL_ADD, 3, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2650800133, u64=9210045430295953413}}) = 0
+452012 getsockname(3, {sa_family=AF_INET, sin_port=htons(18443), sin_addr=inet_addr("0.0.0.0")}, [112 => 16]) = 0
+452012 openat(AT_FDCWD, "", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+452012 epoll_ctl(4, EPOLL_CTL_DEL, 3, 0xc000149d04) = 0
+452012 close(3)                         = 0
+452012 exit_group(0)                    = ?
+452015 <... epoll_pwait resumed> <unfinished ...>) = ?
+452014 <... futex resumed>)             = ?
+452013 <... nanosleep resumed> <unfinished ...>) = ?
+452015 +++ exited with 0 +++
+452014 +++ exited with 0 +++
+452013 +++ exited with 0 +++
+452017 <... futex resumed>)             = ?
+452017 +++ exited with 0 +++
+452016 <... futex resumed>)             = ?
+452016 +++ exited with 0 +++
+452012 +++ exited with 0 +++
