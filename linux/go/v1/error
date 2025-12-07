@@ -1,5 +1,11 @@
 curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://192.168.120.137:18443/ping
 
+openssl req -x509 -nodes -newkey rsa:4096 \
+  -keyout key.pem \
+  -out cert.pem \
+  -days 1825 \
+  -config san.cnf
+
 
 curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://10.198.238.128:18443/ping
 *   Trying 10.198.238.128:18443...
