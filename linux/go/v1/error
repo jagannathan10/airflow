@@ -6,6 +6,126 @@ openssl req -x509 -nodes -newkey rsa:4096 \
   -days 1825 \
   -config san.cnf
 
+root@uklvadsb0128[DEV][certs] # openssl rsa -in key.pem -check
+RSA key ok
+writing RSA key
+-----BEGIN PRIVATE KEY-----
+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
+RX8cl6TUd+17ngFXspn3vPFRzIS0fg==
+-----END PRIVATE KEY-----
+root@uklvadsb0128[DEV][certs] # openssl x509 -in cert.pem
+-----BEGIN CERTIFICATE-----
+MIIFmTCCA4GgAwIBAgIUKkeYoZiK6wZtgrZi6IAFBdgqWl0wDQYJKoZIhvcNAQEL
+BQAwXDELMAkGA1UEBhMCSU4xCzAJBgNVBAgMAlROMRAwDgYDVQQHDAdDaGVubmFp
+MQwwCgYDVQQKDANTQ0IxEDAOBgNVBAsMB0FpcmZsb3cxDjAMBgNVBAMMBWFnZW50
+MB4XDTI1MTIwNzExNTczMloXDTMwMTIwNjExNTczMlowXDELMAkGA1UEBhMCSU4x
+CzAJBgNVBAgMAlROMRAwDgYDVQQHDAdDaGVubmFpMQwwCgYDVQQKDANTQ0IxEDAO
+BgNVBAsMB0FpcmZsb3cxDjAMBgNVBAMMBWFnZW50MIICIjANBgkqhkiG9w0BAQEF
+AAOCAg8AMIICCgKCAgEAjRog3Y1M7seJFQs1/vXEy57h0okzJ9dIhXmTnOz3/z3a
+Qn52gHYHo/YWEc3kkO6QsMr5dKoC7Y3LJF4bTI/CPWXfqADj31P2sVHM3uLgqaT4
+eWH+nK4jHXQ8zGYPB0pElTSQ0pZ0S/g0Xi0kT6sciMXB0OBno6OXnXzbOtm8d0lg
+G/cXG1Nqr8p6R7k2PHGGUriL+tUr1AXy/SJZQCD1qCM069fczCiKe4xcft35sr4m
+htpBTfgKwQ0rwxCCSkksyVHhb23vCRt6PJ7IWlnrHZXd8DHi2MzuRoJznmp9Jns2
+INFgCqJj0tBn6RWT0TWnqDzyzv15Gs9Iv1JduWQIDt7pFxXnVjAX3ptcTa0uh+kD
+c7etqxneMOGWMvh1VGFFLBgudC2qlGCzV8gOWUrDRs0yPwt+fOvrp2DE/ui5iurq
+l8TIx5cr9FiO/uI+7X8WXMbp3KYTX0hG9w7lYnVTefOOQW699x+OiPHqIgTpF2YL
+jmoIwpz9wdmyrIN1Yx7HyfIJwG4+8ijSL7aHIOylj5k2IEuAPZKZpW6udM+6Sq8/
+F1ZgsYykXgAo3cyCq+jI0ri7rwdMfFs7sIQgYYnhcWYdanIoqjNIRonYmMKTK6BY
+pzWYeBKYqzx5awdVBfEChxdesquCuLjG772VOGiNPVFw2xZ5inurkGJ+nC9kE6MC
+AwEAAaNTMFEwHQYDVR0OBBYEFFNGDLOW+jKCTUIrnSkEAs/mk7YwMB8GA1UdIwQY
+MBaAFFNGDLOW+jKCTUIrnSkEAs/mk7YwMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI
+hvcNAQELBQADggIBABzVhpYOBOX9eda9P94+H9/jqfKNX3zSQVVM2wj+696ngrYF
+orgcZ9DQizmTqxJ0My6uevw9+FqOBgUU2ugx5bzeoLD39/bInH/d9cO2fuTaTBFa
+qo6MnMrgjZy5TjMevuRRtFzQRptBLIZT9lmwZYY0Z8R6UJo91rjcV7Upt0SU90wC
+IRHBuTkBsCy09UMHB3XeE4UQTfXK9mk3DNZblt8t76CojTlTzlg2QTdVSH2bYBot
+nbx6X6Vgo/pLZTPwDUYAsu9dHsdbxuqQlE/HxYn6Uh+XhDfltF+xx/0/XyG9EagF
+0B3WKfkfPgg4leyRPnUYTQdJ+S+HOOo8GZxCRyIpL4v6oP+SbT5ItxXrRQTAXHwN
+8ZCmT7a85qeDMyoQ4mtqNeZPzzkrFXPMEayUahVasmtib8EZH0Rlny0T9Hz2nwZW
+TOSGAUY+KytfM4XWCLJXgkr2fUVjjM8jzgnuZh12GDSQG+tyrnDR2ZIirbuDwESU
+CmRt7IZsxeLadGAwiPbPjApODKAvtX78zfw4i4R8mzLhnvvtQD9YXGdKMAY1fxMV
+xOkLjjMuwi64tGnIIUw+VT8I/njP9Kbe1EBBPog6iGHyil/eEgWZcREKgOx/iI7C
+//hm86u+j3d/J+Ox+H22jA474zdJsIHZv8oiS3SNPE27BMVCFqJWZuBVE0yI
+-----END CERTIFICATE-----
+
+
+# ======================================================================
+#  Universal Airflow Remote Agent - Configuration File
+# ======================================================================
+
+listen:
+  host: "0.0.0.0"
+  port: 18443
+
+tls:
+server_cert: "/opt/airflow_agent/certs/cert.pem"
+server_key: "/opt/airflow_agent/certs/key.pem"
+
+# If empty/missing, agent uses built-in fallback token
+
+allowed_ips:
+
+command_blacklist:
+  - "shutdown"
+  - "reboot"
+  - "rm -rf /"
+  - "mkfs "
+  - ":(){ :|:& };:"
+
+rate_limit:
+  window_seconds: 60
+  max_requests: 120
+
+retention_days: 60
+
+
 
 curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://10.198.238.128:18443/ping
 *   Trying 10.198.238.128:18443...
