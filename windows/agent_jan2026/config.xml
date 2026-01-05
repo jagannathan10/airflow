@@ -1,0 +1,20 @@
+listen:
+  host: "0.0.0.0"
+  port: 18443
+
+tls:
+  server_cert: "C:\\airflow_agent\\certs\\cert.pem"
+  server_key:  "C:\\airflow_agent\\certs\\key.pem"
+
+# If empty/missing → uses built-in fallback token
+token: ""
+
+allowed_ips:
+
+command_blacklist:
+
+#rate_limit:
+#  window_seconds: 60
+# max_requests: 120
+
+#retention_days: 60
