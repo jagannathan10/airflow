@@ -20,6 +20,12 @@ Build
     c:\airflow_agent>go build -o C:\airflow_agent\airflow_agent.exe .\airflow_agent_windows.go
 
 
+Create certificate (we use self-signed)
+
+    openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 1825 -subj "/C=IN/ST=TN/L=Chennai/O=SCB/OU=Airflow/CN=airflow-agent"
+
+
+
 How to start
 
     c:\airflow_agent>C:\airflow_agent\airflow_agent.exe --config C:\airflow_agent\config.xml
