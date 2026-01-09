@@ -200,30 +200,8 @@ func blockedCommand(cmd string) bool {
 }
 
 func checkRateLimit(ip string) bool {
-	configLock.RLock()
-	window := config.RateLimit.WindowSeconds
-	limit := config.RateLimit.MaxRequests
-	configLock.RUnlock()
-
-	now := time.Now().Unix()
-
-	rateLock.Lock()
-	defer rateLock.Unlock()
-
-	bucket := rateBucket[ip]
-	filtered := []int64{}
-	for _, t := range bucket {
-		if now-t <= int64(window) {
-			filtered = append(filtered, t)
-		}
-	}
-	rateBucket[ip] = filtered
-
-	if len(filtered) >= limit {
-		return false
-	}
-	rateBucket[ip] = append(rateBucket[ip], now)
-	return true
+// Rate limiting disabled
+    return true
 }
 
 // ---------------- JOB TRACKING ----------------
