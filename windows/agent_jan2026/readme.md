@@ -63,3 +63,8 @@ Verify
 sc.exe query airflow-agent
 netstat -ano | findstr 18443
 
+
+sc.exe create airflow-agent binPath= "\"C:\airflow_agent\airflow_agent.exe\" --config \"C:\airflow_agent\config.xml\"" start= auto
+sc.exe failure airflow-agent reset= 60 actions= restart/5000/restart/5000/restart/5000
+sc.exe start airflow-agent
+sc.exe query airflow-agent
