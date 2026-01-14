@@ -35,3 +35,31 @@ How to start
     2026/01/05 13:24:10 [AGENT] cert=C:\airflow_agent\certs\cert.pem key=C:\airflow_agent\certs\key.pem
     2026/01/05 13:24:10 [AGENT] WARNING: token missing in config.xml → using fallback token
     2026/01/05 13:24:10 [AGENT] config.xml loaded
+
+Create Service 
+
+    $svcName = "airflow-agent"
+    $bin = "C:\airflow_agent\airflow_agent.exe"
+    $args = "--config C:\airflow_agent\config.xml"
+    
+    # Create service
+    sc.exe create $svcName binPath= "`"$bin`" $args" start= auto DisplayName= "Airflow Remote Agent"
+    sc.exe failure $svcName reset= 60 actions= restart/5000/restart/5000/restart/5000
+    
+    # Open firewall port
+    New-NetFirewallRule -DisplayName "Airflow Agent 18443" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 18443
+    
+    # Start service
+    sc.exe start $svcName
+
+runit (Admin powershell)
+
+    powershell -ExecutionPolicy Bypass -File C:\airflow_agent\install-service.ps1
+
+Verify
+
+    powershell -ExecutionPolicy Bypass -File C:\airflow_agent\install-service.ps1
+
+sc.exe query airflow-agent
+netstat -ano | findstr 18443
+
