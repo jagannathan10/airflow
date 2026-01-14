@@ -18,3 +18,14 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a----         1/14/2026   7:04 PM           6438 cert.pem
 -a----         1/14/2026   7:04 PM           3322 key.pem
+
+
+        icacls C:\airflow_agent\certs\cert.pem /grant "SYSTEM:R"
+        icacls C:\airflow_agent\certs\key.pem  /grant "SYSTEM:R"
+        icacls C:\airflow_agent\jobs           /grant "SYSTEM:(OI)(CI)M"
+
+sc.exe stop airflow-agent 2>$null
+sc.exe delete airflow-agent 2>$null
+
+sc.exe create airflow-agent binPath= "\"C:\airflow_agent\airflow_agent.exe\" --config \"C:\airflow_agent\config.xml\"" start= auto
+sc.exe start airflow-agent
