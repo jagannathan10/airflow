@@ -63,8 +63,33 @@ Verify
 sc.exe query airflow-agent
 netstat -ano | findstr 18443
 
+        sc.exe create airflow-agent binPath= "\"C:\airflow_agent\airflow_agent.exe\" --config \"C:\airflow_agent\config.xml\"" start= auto
+        sc.exe failure airflow-agent reset= 60 actions= restart/5000/restart/5000/restart/5000
+        sc.exe start airflow-agent
+        sc.exe query airflow-agent
 
-sc.exe create airflow-agent binPath= "\"C:\airflow_agent\airflow_agent.exe\" --config \"C:\airflow_agent\config.xml\"" start= auto
-sc.exe failure airflow-agent reset= 60 actions= restart/5000/restart/5000/restart/5000
-sc.exe start airflow-agent
-sc.exe query airflow-agent
+    c:\airflow_agent>sc.exe start airflow-agent
+    
+    SERVICE_NAME: airflow-agent
+            TYPE               : 10  WIN32_OWN_PROCESS
+            STATE              : 2  START_PENDING
+                                    (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+            WIN32_EXIT_CODE    : 0  (0x0)
+            SERVICE_EXIT_CODE  : 0  (0x0)
+            CHECKPOINT         : 0x0
+            WAIT_HINT          : 0x7d0
+            PID                : 6784
+            FLAGS              :
+
+    c:\airflow_agent>sc.exe query airflow-agent
+    
+    SERVICE_NAME: airflow-agent
+            TYPE               : 10  WIN32_OWN_PROCESS
+            STATE              : 4  RUNNING
+                                    (STOPPABLE, NOT_PAUSABLE, ACCEPTS_SHUTDOWN)
+            WIN32_EXIT_CODE    : 0  (0x0)
+            SERVICE_EXIT_CODE  : 0  (0x0)
+            CHECKPOINT         : 0x0
+            WAIT_HINT          : 0x0
+    
+    c:\airflow_agent>
