@@ -492,26 +492,29 @@ func cancelHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"job_id": jobID, "status": "cancelled"})
 }
 
-func main() {
-	cfgPath := flag.String("config", `C:\airflow_agent\config.xml`, "Path to config.xml")
-	flag.Parse()
+func setupFileLogging() {
+	// Service has no console; log to file always
+	logPath := filepath.Join(baseDir, "agent.log")
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err == nil {
+		log.SetOutput(f)
+		log.Println("[AGENT] logging to", logPath)
+	} else {
+		// fallback to stderr
+		log.Println("[AGENT] failed to open log file:", err)
+	}
+}
 
-	configFile = *cfgPath
-	baseDir = filepath.Dir(configFile)
-	jobDir = filepath.Join(baseDir, "jobs")
-
+func runAgentServer() {
+	// config + loops
 	_ = os.MkdirAll(jobDir, 0755)
 
 	if err := loadConfig(); err != nil {
 		log.Printf("[AGENT] WARNING: could not load config.xml (%v). Using defaults.\n", err)
-		// still allow run with defaults; fallback token is always enforced via validateToken()
-		// but token is in config; if config failed, it stays empty → we must inject fallback:
 		configLock.Lock()
 		config.Token = DefaultAgentToken
 		config.Listen.Host = "0.0.0.0"
 		config.Listen.Port = 18443
-		config.RateLimit.WindowSeconds = 60
-		config.RateLimit.MaxRequests = 120
 		config.RetentionDays = 60
 		configLock.Unlock()
 	}
@@ -540,4 +543,25 @@ func main() {
 		log.Printf("[AGENT] cert=%s key=%s\n", cert, key)
 		log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
 	}
+}
+
+
+func main() {
+	cfgPath := flag.String("config", `C:\airflow_agent\config.xml`, "Path to config.xml")
+	flag.Parse()
+
+	configFile = *cfgPath
+	baseDir = filepath.Dir(configFile)
+	jobDir = filepath.Join(baseDir, "jobs")
+
+	setupFileLogging()
+
+	// If launched by SCM, run service mode (fixes Error 1053)
+	if mainService() {
+		runAsService()
+		return
+	}
+
+	// Manual console mode (same behavior as before)
+	runAgentServer()
 }
