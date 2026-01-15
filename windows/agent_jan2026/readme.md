@@ -3,21 +3,22 @@ Jan 2026 Update - working agent
 
 Build 
 
-    C:\Users\jagan>cd c:\airflow_agent
+    c:\airflow_agent>cd src
     
-    c:\airflow_agent>go mod init airflow_agent
-    go: creating new go.mod: module airflow_agent
-    go: to add module requirements and sums:
-            go mod tidy
+    c:\airflow_agent\src>go mod init airflow-agent 2>$null
     
-    c:\airflow_agent>go get gopkg.in/yaml.v3
-    go: downloading gopkg.in/yaml.v3 v3.0.1
+    c:\airflow_agent\src>go mod init airflow-agent 2>$null
+    
+    c:\airflow_agent\src>go get gopkg.in/yaml.v3
     go: added gopkg.in/yaml.v3 v3.0.1
     
-    c:\airflow_agent>go mod tidy
-    go: downloading gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405
+    c:\airflow_agent\src>go get golang.org/x/sys/windows/svc
+    go: downloading golang.org/x/sys v0.40.0
+    go: added golang.org/x/sys v0.40.0
     
-    c:\airflow_agent>go build -o C:\airflow_agent\airflow_agent.exe .\airflow_agent_windows.go
+    c:\airflow_agent\src>go get golang.org/x/sys/windows/svc/eventlog
+       
+    c:\airflow_agent\src>go build -o C:\airflow_agent\airflow_agent.exe .
 
 
 Create certificate (we use self-signed)
