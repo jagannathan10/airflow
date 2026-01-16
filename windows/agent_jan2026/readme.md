@@ -137,3 +137,38 @@ Powershell
         Write-Error "ERROR: Failed to create file - $($_.Exception.Message)"
         exit 1
     }
+
+
+
+    curl.exe -k -X POST ^
+      https://WINDOWS_HOST:18443/run ^
+      -H "Content-Type: application/json" ^
+      -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2" ^
+      -d @- <<EOF
+    {
+      "command": "C:\\airflow_agent\\jobs\\test_job.bat",
+      "job_id": "windows_test_job_001",
+      "skip_if_running": true,
+      "fire_and_forget": false,
+      "use_tmux": false
+    }
+
+
+    curl.exe -k -X GET ^
+      https://WINDOWS_HOST:18443/status/windows_test_job_001 ^
+      -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+        curl.exe -k -X GET ^
+      "https://WINDOWS_HOST:18443/logs/windows_test_job_001?stream=stderr&offset=0" ^
+      -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+
+    curl.exe -k -X GET ^
+      "https://WINDOWS_HOST:18443/logs/windows_test_job_001?stream=stdout&offset=0" ^
+      -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+    curl.exe -k -X POST ^
+      https://WINDOWS_HOST:18443/cancel/windows_test_job_001 ^
+      -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"
+
+
