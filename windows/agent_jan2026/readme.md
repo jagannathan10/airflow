@@ -97,3 +97,43 @@ Verify
 
 netstat -ano | findstr :18443
 
+
+    @echo off
+    setlocal
+    
+    set TARGET_DIR=C:\temp\testfolder
+    set FILE_NAME=testfile.txt
+    
+    if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
+    
+    echo Test > "%TARGET_DIR%\%FILE_NAME%"
+    if errorlevel 1 (
+        echo ERROR: Failed to create file
+        exit /b 1
+    )
+    
+    echo SUCCESS: File created
+    exit /b 0
+
+Powershell
+
+    $ErrorActionPreference = "Stop"
+    
+    $TargetDir = "C:\temp\testfolder"
+    $FileName  = "testfile.txt"
+    
+    try {
+        if (-not (Test-Path $TargetDir)) {
+            New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+        }
+    
+        "Test file created on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" |
+            Set-Content -Path (Join-Path $TargetDir $FileName) -Encoding UTF8
+    
+        Write-Host "SUCCESS: File created"
+        exit 0
+    }
+    catch {
+        Write-Error "ERROR: Failed to create file - $($_.Exception.Message)"
+        exit 1
+    }
