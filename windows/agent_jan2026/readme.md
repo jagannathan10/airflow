@@ -152,7 +152,7 @@ Powershell
       "fire_and_forget": false,
       "use_tmux": false
     }
-
+    EOF
 
     curl.exe -k -X GET ^
       https://WINDOWS_HOST:18443/status/windows_test_job_001 ^
