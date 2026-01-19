@@ -358,3 +358,191 @@ templated config pulled from Artifactory (host-specific)
 
 or post-install Set-Content with secrets from vault (recommended)
 
+
+------------------------------------
+
+    param(
+      [string]$BaseDir = "C:\airflow_agent",
+      [string]$ServiceName = "airflow-agent",
+      [string]$DisplayName = "Airflow Remote Agent",
+      [string]$ExeName = "airflow_agent.exe",
+      [string]$ListenHost = "0.0.0.0",
+      [int]$ListenPort = 18443,
+    
+      # Artifactory URLs
+      [string]$ExeUrl    = "https://artifactory.example.com/airflow-agent/windows/airflow_agent.exe",
+    
+      # Artifactory objects may be named certfile/keyfile, but we will save locally as cert.pem/key.pem
+      [string]$CertUrl   = "https://artifactory.example.com/airflow-agent/certs/certfile",
+      [string]$KeyUrl    = "https://artifactory.example.com/airflow-agent/certs/keyfile",
+    
+      # Optional: download config.xml from Artifactory
+      [string]$ConfigUrl = "",
+    
+      # If ConfigUrl empty, script writes config.xml locally using these:
+      [string]$Token = "scb-airflowagent-CHANGE-ME",
+    
+      # Multiple CIDRs allowed
+      [string[]]$AllowedCidrs = @("10.0.0.0/8", "192.168.0.0/16"),
+    
+      # Rate limiting (set max to 0 if you want disabled)
+      [int]$RateWindowSeconds = 60,
+      [int]$RateMaxRequests = 120,
+    
+      [int]$RetentionDays = 60,
+    
+      [switch]$InsecureTlsDownload # if Artifactory TLS chain issues
+    )
+    
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = "Stop"
+    
+    function Write-Info($msg) { Write-Host "[INFO] $msg" -ForegroundColor Cyan }
+    function Write-Warn($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
+    function Write-Err ($msg) { Write-Host "[ERR ] $msg" -ForegroundColor Red }
+    
+    function Ensure-Dir($p) {
+      if (!(Test-Path $p)) { New-Item -ItemType Directory -Path $p | Out-Null }
+    }
+    
+    function Enable-InsecureTlsIfRequested {
+      if ($InsecureTlsDownload) {
+        Write-Warn "InsecureTlsDownload enabled: ignoring TLS validation for downloads (controlled intranet only)."
+        add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+      public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate,
+        WebRequest request, int certificateProblem) { return true; }
+    }
+    "@
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+      }
+    }
+    
+    function Download-File($url, $dest) {
+      Write-Info "Downloading: $url -> $dest"
+      Enable-InsecureTlsIfRequested
+      Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+    }
+    
+    function Write-Config($path) {
+      Write-Info "Writing config.xml to $path"
+    
+      # Build allowed_ips YAML list (supports multiple CIDRs)
+      $allowedYaml = ""
+      foreach ($cidr in $AllowedCidrs) {
+        if ($cidr -and $cidr.Trim() -ne "") {
+          $allowedYaml += "  - `"$cidr`"`n"
+        }
+      }
+    
+      # If no CIDRs provided, keep key but empty list (agent will interpret as allow-all)
+      if ($allowedYaml -eq "") {
+        $allowedYaml = "  # (empty) allow-all`n"
+      }
+    
+      $content = @"
+    listen:
+      host: "$ListenHost"
+      port: $ListenPort
+    
+    tls:
+      server_cert: "$BaseDir\\certs\\cert.pem"
+      server_key:  "$BaseDir\\certs\\key.pem"
+    
+    token: "$Token"
+    
+    allowed_ips:
+    $allowedYaml
+    command_blacklist:
+      - "shutdown"
+      - "reboot"
+      - "rm -rf"
+      - "format "
+      - "diskpart"
+      - "bcdedit"
+      - "net user"
+    
+    rate_limit:
+      window_seconds: $RateWindowSeconds
+      max_requests: $RateMaxRequests
+    
+    retention_days: $RetentionDays
+    "@
+    
+      $content | Out-File -FilePath $path -Encoding ascii
+    }
+    
+    function Set-Permissions($baseDir) {
+      Write-Info "Setting ACLs for SYSTEM on $baseDir"
+      icacls $baseDir /grant "SYSTEM:(OI)(CI)RX" | Out-Null
+      icacls "$baseDir\jobs" /grant "SYSTEM:(OI)(CI)M" | Out-Null
+      icacls "$baseDir\certs" /grant "SYSTEM:(OI)(CI)R" | Out-Null
+      icacls "$baseDir\config.xml" /grant "SYSTEM:R" | Out-Null
+    }
+    
+    function Install-Or-Update-Service($exePath, $configPath) {
+      $binPath = "`"$exePath`" --config `"$configPath`""
+    
+      $existing = (sc.exe query $ServiceName 2>$null)
+      if ($LASTEXITCODE -eq 0) {
+        Write-Info "Service exists. Updating binPath and restarting."
+        sc.exe stop $ServiceName 2>$null | Out-Null
+        sc.exe config $ServiceName binPath= $binPath start= auto DisplayName= "$DisplayName" | Out-Null
+      } else {
+        Write-Info "Creating service $ServiceName"
+        sc.exe create $ServiceName binPath= $binPath start= auto DisplayName= "$DisplayName" | Out-Null
+        sc.exe failure $ServiceName reset= 60 actions= restart/5000/restart/5000/restart/5000 | Out-Null
+      }
+    
+      # Firewall rule (idempotent)
+      $ruleName = "Airflow Agent $ListenPort"
+      if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)) {
+        New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $ListenPort | Out-Null
+      }
+    
+      Write-Info "Starting service..."
+      sc.exe start $ServiceName | Out-Null
+    }
+    
+    # --------------------------------------------------------------------
+    # MAIN
+    # --------------------------------------------------------------------
+    Ensure-Dir $BaseDir
+    Ensure-Dir "$BaseDir\certs"
+    Ensure-Dir "$BaseDir\jobs"
+    
+    $exePath = Join-Path $BaseDir $ExeName
+    $configPath = Join-Path $BaseDir "config.xml"
+    
+    # Download artifacts
+    Download-File $ExeUrl $exePath
+    
+    # Download cert/key from Artifactory (may be named certfile/keyfile) and save locally as cert.pem/key.pem
+    Download-File $CertUrl (Join-Path "$BaseDir\certs" "cert.pem")
+    Download-File $KeyUrl  (Join-Path "$BaseDir\certs" "key.pem")
+    
+    # config.xml
+    if ($ConfigUrl -and $ConfigUrl.Trim() -ne "") {
+      Download-File $ConfigUrl $configPath
+    } else {
+      Write-Config $configPath
+    }
+    
+    Set-Permissions $BaseDir
+    
+    Install-Or-Update-Service $exePath $configPath
+    
+    # Show service status (no healthcheck)
+    sc.exe query $ServiceName
+    
+    Write-Info "Done. BaseDir=$BaseDir, Service=$ServiceName"
+
+
+Notes
+
+For multiple CIDRs, pass them like:
+
+    .\install_agent.ps1 -AllowedCidrs @("10.0.0.0/8","192.168.120.0/24","172.16.0.0/12")
