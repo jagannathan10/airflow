@@ -546,3 +546,70 @@ Notes
 For multiple CIDRs, pass them like:
 
     .\install_agent.ps1 -AllowedCidrs @("10.0.0.0/8","192.168.120.0/24","172.16.0.0/12")
+
+
+    from datetime import datetime
+    from airflow import DAG
+    
+    from agent_windows_unified import AgentWindowsUnifiedOperator
+    
+    with DAG(
+        dag_id="windows_basic_job",
+        start_date=datetime(2025, 1, 1),
+        schedule_interval=None,
+        catchup=False,
+        tags=["windows", "agent"],
+    ) as dag:
+    
+        run_powershell = AgentWindowsUnifiedOperator(
+            task_id="run_ps_script",
+            target_server="WINDOWS_HOST:18443",
+            command=r'powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\scripts\create_test_file.ps1',
+            agent_conn_id="agent_default",
+    
+            # Optional
+            stream_stdout=False,     # stderr only (recommended)
+            timeout_seconds=None,    # ⭐ NO timeout (multi-week jobs supported)
+        )
+
+
+
+aonother
+
+    from datetime import datetime
+    from airflow import DAG
+    from airflow.operators.empty import EmptyOperator
+    
+    from agent_windows_unified import AgentWindowsUnifiedOperator
+    
+    with DAG(
+        dag_id="windows_parallel_jobs",
+        start_date=datetime(2025, 1, 1),
+        schedule_interval=None,
+        catchup=False,
+        tags=["windows", "parallel"],
+    ) as dag:
+    
+        start = EmptyOperator(task_id="start")
+    
+        job1 = AgentWindowsUnifiedOperator(
+            task_id="job_1",
+            target_server="WINDOWS_HOST:18443",
+            command=r'C:\tools\job1.bat',
+        )
+    
+        job2 = AgentWindowsUnifiedOperator(
+            task_id="job_2",
+            target_server="WINDOWS_HOST:18443",
+            command=r'C:\tools\job2.ps1',
+        )
+    
+        job3 = AgentWindowsUnifiedOperator(
+            task_id="job_3",
+            target_server="WINDOWS_HOST:18443",
+            command=r'C:\tools\job3.exe --mode batch',
+            stream_stdout=True,   # enable stdout only if needed
+        )
+    
+        start >> [job1, job2, job3]
+
