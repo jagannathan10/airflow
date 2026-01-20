@@ -1,0 +1,11 @@
+1	Is Job re-run supported in Airflow ?
+2	If Yes. Will it support re-run after scheduled job Failed / Success
+3	If re-run is supported job retrigger will initiate from the point of failure job or from the starting job.
+4	Does Airflow support job hold and release.
+5	How about Adhoc cyclic job which gets triggered every 1 hr during the business hours
+6	Understand Airflow doesn’t have any UI which is currently available in ControlM. In this case how can all the job be monitored and controlled.
+7	Does Airflow support to modifiy the job parameters and trigger the job with new parameter.
+8	Does Airflow support Job Statistics which corrently ControlM does
+9	Does Airflow support Country based Calendar to manage the holidays
+10	Does Airflow supports ordering the jobs
+11	Managing the independent jobs through cron is difficult to handle and writing cron jobs for 140+ jobs would be dificult to complete within the short timline.
