@@ -9,3 +9,11 @@
 9	Does Airflow support Country based Calendar to manage the holidays
 10	Does Airflow supports ordering the jobs
 11	Managing the independent jobs through cron is difficult to handle and writing cron jobs for 140+ jobs would be dificult to complete within the short timline.
+
+
+ Country Holiday Calendar handling for jobs in CRON.
+• ADO Post build equivalent will not run more than 60 mins – we have few jobs which runs for more than 2 / 3 hours.
+• SNOW Alert is created for every failure (in turn can be created as Incident) for Control M Failure, for CRON jobs we don’t have any such alerts that will be created.
+• Geo Resiliency Handling – Activate Jobs in DR (Server will Up & Running always), currently with Control M there is no specific activity as part of N/W switch this will happen automatically.
+• Additional Code efforts to incorporate exceptions cases to move to CRON (Current Control M features not available in CRON).
+• Option of pause or hold and release not available in CRON
