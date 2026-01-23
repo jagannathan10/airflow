@@ -174,3 +174,16 @@ Description
 Is the file watcher jobs missing file monitoring feature? Is it handled in utils.scb_custom_operator?
 
 
+1.	%ODATE - WIP
+2.	Variable calculation – WIP
+3.	Calendar  - WIP
+o	Country specific runday calendar (no run on Sundays and Holidays)
+o	First workday
+o	7th of the month or next workday when day falls on holiday or Sunday
+4.	SMART folder’s Adjust Events – It’s not possible with airflow. Will confirm 
+5.	File Watcher – Possible 
+6.	Ability to rerun on a past date
+-	We can rerun the job, past date – does it mean you run with specific older date ? 
+
+
+Just want to follow-up on this. Please advise what is the alternative solution since you mentioned there won’t be an “adjust event” function in airflow. Also, please advise when can we have the airflow DAG for the json I’ve provided earlier ? Thanks.
