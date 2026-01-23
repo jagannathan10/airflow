@@ -17,3 +17,63 @@
 • Geo Resiliency Handling – Activate Jobs in DR (Server will Up & Running always), currently with Control M there is no specific activity as part of N/W switch this will happen automatically.
 • Additional Code efforts to incorporate exceptions cases to move to CRON (Current Control M features not available in CRON).
 • Option of pause or hold and release not available in CRON
+
+
+1	How to get Access to Airflow for PE team?
+2	How to identify Jobs are success/Failed?
+3	How to check logs for Jobs?
+4	where are Airflow task logs stored? who is the owner of that log, log retention period?
+5	Can logs be correlated with execution date and run id?
+6	Job failure alerts mail to PE team, currently control-M alerts configured in Service now
+7	How to Manually Order jobs.
+8	How to reran the jobs in case job failure
+9	PE Team can manually ordered, delete and reran the job ? Is that access available ?
+10	Is Airflow running in UTC or which time zone
+11	How to check Predecessor & Successor of the Jobs
+12	On Which ID (capeadm) jobs was running
+13	Can failed tasks be rerun without re-executing successful tasks? (Is there any restriction)
+14	How are partial failures identified and handled? 
+15	what is the recovery procedure if Airflow scheduler goes down?
+16	POC for Airflow team?
+17	How are holidays and business-day schedules handled? (Holiday Calendar)
+18	How to check Job calendars?
+19	Is order id maintaining in Airflow ?
+20	How to check Jobs history? , how longs job history was maintaining?
+21	Are SLA miss alerts configured? HOW ARE ALERT and duplicate alerts controlled?
+22	what is the maximum concurrent and task capacity? 
+23	Do we need to clean up any storage(Like Archival)
+24	what database is used for Airflow metadata?
+25	what is the disaster recovery strategy for Airflow?
+26	"How to identify type of jobs( Cyclic job or One time Job). How to identify Number of RUNS 
+of specific Jobs?"
+27	Will control-M and Airflow run in parallel during migration?
+28	How to generate a Airflow report for our projects (Success/Failure)
+29	In Control-m We have Software & WEB URL. How about in Airflow?
+30	Jobs Description should be clear as like Control-M
+	
+31	Is it possible to create new/import  jobs in UI (like Control-M)?
+32	Is it possible to validate the jobs before deploy in SIT?
+33	In Control-M if we order the jobs in Dev then it will start the execution, how is it in Airflow?
+34	Is it possible to receive Email Notification to DEV team in SIT env for failure job?
+35	Is it possible to HOLD/Free/Delete/Ignore time criteria/order to wait (Options) the jobs?
+36	How to create EOD, BOD, EOW, last day of Month and Scheduling specific Dates jobs?
+37	Is it possible to create Holiday Calendar(Global or Local) in Airflow?
+38	How to assign a local/Global calendar to a job?
+39	Where can we find the Graph in UI?
+40	What is the structure of viewpoint(List/Map)?
+41	What is job statuses ICONS and colours?
+42	On-Do Actions(Notification before job complete after job complete/ Job ended OK)
+43	Custom filter options(All jobs/Ended OK/Ended Not OK/Waiting jobs) in viewpoint
+44	Is there any option to finding /Bookmarking job in viewpoint?
+45	is Accessing the Alert windows(Severity: Normal/Urgent/Very Urgent Message: Ended not OK)
+46	Reading and Handling Alerts option
+47	Can we run Airflow and Control-M jobs  simultaneously in Dev environment?
+48	"By default, Apache Airflow doesn't support Cyclic Jobs then 
+how Airflow Team has implemented ?"
+49	How to handle authentication and authorization in Airflow?
+50	"Is training provided for Airflow developers and operators? If yes, provide axcess academy
+ and Udemy courses URL/access?"
+51	Why standalone Control-M jobs not able Migrate to Airflow?
+52	is there any concept NDP(New Day Procedure) to cleanup old jobs and load new set of jobs?
+53	What are the filter criteria availabe?
+54	is jobs are ordered folderwise like control-M?
