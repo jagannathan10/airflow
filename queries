@@ -77,3 +77,100 @@ how Airflow Team has implemented ?"
 52	is there any concept NDP(New Day Procedure) to cleanup old jobs and load new set of jobs?
 53	What are the filter criteria availabe?
 54	is jobs are ordered folderwise like control-M?
+
+Description
+
+"There are a list of 2 dependency tasks (predecessor task will immediately trigger the sucessor task without any waiting or sleep). 
+Issue - These 2 tasks are in 2 DAGS instead of 1 DAG,  it makes the entire succesor task with hugh time delay"	
+
+Expected Behaviour / Clartification
+
+"Should be within same DAG
+
+sample1: HKO_HK_BT00000019D, HKO_HK_IMFT000004D in the same DAG with the same scheduled time and dependency
+sample2: HKO_HK_FW00000007D_FW, HKO_HK_BT00000007D in the same DAG with the same scheduled time and dependency"	
+
+DAG/TASK/Control M JOB ID
+
+"Example 1 
+DAG: HKO_HK__DAG-12, HKO_HK__DAG-4
+Control M: HKO_HK_BT00000019D, HKO_HK_IMFT000004D
+
+Example 2
+DAG: 
+Control M: HKO_HK_FW00000007D_FW, HKO_HK_BT00000007D"
+
+Description
+
+"Please confirm if the failure task with logging to Granfana and how to catch the error in Granfana.
+For instance - 
++ ctmfw '/AA/03/HKOE/ist/batch/files/input/BCAN_*.txt' CREATE 1 600 10 3 0 Y 0717 0800 NO_MIN_AGE NO_MAX_AGE
+0123 08:07:02 : Absolute stop time is set to 20260123080000
+0123 08:07:02 : Processing of File Watcher commands timed out ( absolute stop time )"	
+
+Expected Behaviour / Clartification
+
+
+What would be keyword to make the integrated granfana alert accordingly	
+
+DAG/TASK/Control M JOB ID
+
+"Example 1 
+DAG: HKO_HK__DAG-11, HKO_HK__DAG-54
+Control M: HKO_HK_FW00000007D_FW"
+
+Description
+
+	"There are a list of 2 dependency tasks (predecessor task will immediately trigger the sucessor task with different scheduled time
+Problem :  Decouple the dependency tasks (ie unlinked DAGS and Tasks)"
+
+Expected Behaviour / Clartification
+
+Run the successor task only if the predecessor task is success
+
+DAG/TASK/Control M JOB ID
+
+"Example 1 
+DAG: HKO_HK__DAG-11, HKO_HK__DAG-54
+Control M: HKO_HK_FW00000007D_FW"
+
+Description
+
+"There are some standalone jobs which are used for manual trigger in Control M without schedule time. How to migrate those jobs?
+"
+
+Expected Behaviour / Clartification
+
+The job deployed without any schedule. Able to manual trigger. 
+
+
+DAG/TASK/Control M JOB ID
+"Example 1
+DAG: HKO_HK__DAG-24, HKO_HK__DAG-97
+Control M: HKO_HK_BT00000094D, HKO_HK_IMFT000043D, HKO_HK_BT00000136D
+
+Example 2
+Control M: HKO_HK_BT00001033D, HKO_HK_BT00001034D"
+
+
+Description
+
+Missing calendar control in Dag
+
+Expected Behaviour / Clartification
+
+Run in the last working day of a month
+
+"Example 1
+DAG: HKO_HK__DAG-86
+Control M: HKO_HK_BT00001102M
+
+Example 2
+DAG: HKO_HK__DAG-87
+Control M: HKO_HK_BT00001103M"
+
+
+Description
+Is the file watcher jobs missing file monitoring feature? Is it handled in utils.scb_custom_operator?
+
+
