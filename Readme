@@ -1,3 +1,45 @@
+Cyclic (runs every N minutes / “cyclic” / “rerun every” style)
+
+Event-based / file watcher / shout / rule triggers
+
+Workflow dependency jobs (has IN/OUT conditions, predecessor/successor links, etc.)
+
+Smart folders / sub-folders (if you only want leaf jobs)
+
+Below is a practical way to do it.
+
+What to treat as “standalone / singleton”
+
+A good “singleton” heuristic (works well in real environments):
+
+Include a job only if:
+
+It has a runnable command/script (command, script, embedded script, or runAs command)
+
+It has a time schedule (days + time window / scheduling object)
+
+It has no dependencies (no INCOND/OUTCOND / “conditions” / “dependsOn” / etc.)
+
+It’s not cyclic
+
+It’s not event-driven (filewatcher, event triggers, rule-based triggers)
+
+Because Control-M JSON formats differ (Export JSON vs Automation API deploy JSON), we’ll implement detection defensively.
+
+This will extract standalone/singleton jobs as you want:
+
+✅ Includes Job:Script with When
+
+✅ Builds script as: FilePath/FileName + Arguments
+
+❌ Excludes workflow deps: eventsToWaitFor
+
+❌ Excludes event/filewatcher: FileName == "fileWatcher.ksh" (or you can add more patterns)
+
+✅ Keeps notification fields (doesn’t disqualify)
+
+
+
 python3 -m pip install --user openpyxl
 
 curl -v -k -X POST  -H "X-Agent-Token: scb-airflowagent-cf08bbd8a13a2d8ed0f1fbe915e29c7c0108a0862da8e24a2372f8e4fb6b83d2"   https://192.168.120.137:18443/ping
