@@ -1,3 +1,30 @@
+A. Operators & Runtime Support
+
+Custom Operators 
+
+Script/Command operator enhancements
+
+Long-running job handling
+
+B. Scheduling Plugins
+
+LastNWeekdaysOfMonth
+
+LastNDaysOfMonth
+
+Cyclic/ReRunLimit support
+
+Calendar-based visual schedules
+
+FromTime–ToTime logic
+
+C. Deployment Pipeline
+
+Plugin/Operator Promotion to Production
+
+Automated validation
+
+
 1	Is Job re-run supported in Airflow ?
 2	If Yes. Will it support re-run after scheduled job Failed / Success
 3	If re-run is supported job retrigger will initiate from the point of failure job or from the starting job.
