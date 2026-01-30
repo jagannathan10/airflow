@@ -1,3 +1,12 @@
+The crontab approach seems to support Linux/Unit only, could you advise how this would work for our application running on windows?
+
+Also control-M currently handles failover automatically. With crontab, how would failover be managed? Would manual intervention be required in the servers?
+
+For our setup, we have 4 servers (2 in HK, 2 in SG) linked to control-M and it activates the appropriate node during failover. With crontab, would this mean we have to implement 4 similar scheduling logic on each of the 4 servers, with only one active at a time? In the event of failover, would the PE team need to manually disable the active node and activate the secondary node or execute via a pipeline? Kindly advise. Thanks 
+
+
+
+
 A. Operators & Runtime Support
 
 Custom Operators 
