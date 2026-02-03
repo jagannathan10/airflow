@@ -1,3 +1,137 @@
+Wildfly 38 image
+
+•	Server.log File Size increased to 500m
+•	Update the DB Drivers & Datasource without User name and password
+•	Update the shared lib as global modules 
+•	Hibernate Configuration need to be removed
+•	Proxy Need to enable Sticky Session as true
+•	update the Https and Http Port
+
+
+<!-- File Size increased to 500m -->
+		<periodic-size-rotating-file-handler name="PERIODIC_SIZE" autoflush="true">
+            <file relative-to="jboss.server.log.dir" path="server.log"/>
+            <rotate-size value="500m"/>
+            
+        </periodic-size-rotating-file-handler>
+        <logger category="org.springframework">
+            <level name="DEBUG"/>
+        </logger>
+        <logger category="org.hibernate">
+            <level name="DEBUG"/>
+        </logger>
+
+<!-- Update the DB Datasource without User name and password -->
+    <subsystem xmlns="urn:jboss:domain:datasources:7.2">
+        <datasources>
+            <datasource jndi-name="java:jboss/jdbc/ICM/IN_ICM_RC" pool-name="IN_ICM_RC" enabled="true" use-java-context="true" statistics-enabled="${wildfly.datasources.statistics-enabled:${wildfly.statistics-enabled:false}}">
+                <connection-url>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=hkif2lejgauc700.hk.standardchartered.com)(PORT=1621))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=pdbd_do50403m_rw.standardchartered.com)))</connection-url>
+                <driver>oracle</driver>
+                <pool>
+                    <min-pool-size>1</min-pool-size>
+                    <max-pool-size>75</max-pool-size>
+                    <prefill>false</prefill>
+                    <use-strict-min>false</use-strict-min>
+                    <flush-strategy>FailingConnectionOnly</flush-strategy>
+                </pool>
+                <validation>
+                    <check-valid-connection-sql>SELECT 1 FROM DUAL</check-valid-connection-sql>
+                </validation>
+                <timeout>
+                    <blocking-timeout-millis>5000</blocking-timeout-millis>
+                    <idle-timeout-minutes>5</idle-timeout-minutes>
+                </timeout>
+            </datasource>
+            <datasource jta="true" jndi-name="java:jboss/jdbc/SEC/IN_SEC_RC" pool-name="IN_SEC_RC" enabled="true" use-java-context="true">
+            <connection-url>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=hkif2lejgauc700.hk.standardchartered.com)(PORT=1621))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=pdbd_do50403m_rw.standardchartered.com)))</connection-url>
+                <driver>oracle</driver>
+                <pool>
+                    <min-pool-size>1</min-pool-size>
+                    <max-pool-size>75</max-pool-size>
+                    <prefill>false</prefill>
+                    <use-strict-min>false</use-strict-min>
+                    <flush-strategy>FailingConnectionOnly</flush-strategy>
+                </pool>
+                <validation>
+                    <check-valid-connection-sql>SELECT 1 FROM DUAL</check-valid-connection-sql>
+                </validation>
+                <timeout>
+                    <blocking-timeout-millis>5000</blocking-timeout-millis>
+                    <idle-timeout-minutes>5</idle-timeout-minutes>
+                </timeout>
+            </datasource>
+            <drivers>
+                <driver name="h2" module="com.h2database.h2">
+                    <xa-datasource-class>org.h2.jdbcx.JdbcDataSource</xa-datasource-class>
+                </driver>
+                <driver name="oracle" module="com.oracle">
+                    <driver-class>oracle.jdbc.driver.OracleDriver</driver-class>
+                </driver>
+            </drivers>
+        </datasources>
+    </subsystem>
+<!-- Update the shared lib as global modules -->
+    <subsystem xmlns="urn:jboss:domain:ee:6.0">
+        <global-modules>
+            <module name="sharedLib" slot="main"/>
+            <module name="com.oracle" slot="main"/>
+            <!--<module name="org.hibernate" slot="main"/>
+            <module name="com.google.code.gson" slot="main"/>-->
+        </global-modules>
+<--! Hibernate Configuration need to be removed -->
+		<cache-container name="hibernate" marshaller="JBOSS" modules="org.infinispan.hibernate-cache">
+        </cache-container>
+<!-- Enable debug true and Error as false -->
+        <cached-connection-manager debug="true" error="false"/>
+    </subsystem>
+<!-- Proxy Need to enable Sticky Session as true -->
+    <subsystem xmlns="urn:jboss:domain:modcluster:6.0">
+        <proxy name="default" advertise="false" advertise-socket="modcluster" listener="ajp" sticky-session="true">
+
+<!-- update the Https and Http POrt -->
+<socket-binding-group name="standard-sockets" default-interface="public" port-offset="${jboss.socket.binding.port-offset:0}">
+    <socket-binding name="ajp" port="${jboss.ajp.port:8009}"/>
+    <socket-binding name="http" port="${jboss.http.port:8090}"/>
+    <socket-binding name="https" port="${jboss.https.port:8081}"/>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 The crontab approach seems to support Linux/Unit only, could you advise how this would work for our application running on windows?
 
 Also control-M currently handles failover automatically. With crontab, how would failover be managed? Would manual intervention be required in the servers?
