@@ -1,3 +1,108 @@
+Switching to LocalExecutor doesn’t avoid this in Airflow 3.1.x — the supervisor still calls the Execution API (task-instances/{id}/run). Your stacktrace shows the same path (airflow.sdk.api.client → httpx), so it’s still Airflow process → API server URL resolving to IPv6 / unsupported AF.
+
+Right now your scheduler (LocalExecutor worker process) is trying to reach the API on an address like localhost/::1 or some hostname that resolves to IPv6 first, and the container/network doesn’t support IPv6 → Errno 97.
+
+Fix it permanently (Podman): force IPv4 + explicit API base + execution API URL
+1) Put these into /apps/airflow/.env
+
+Add (or ensure) exactly:
+
+AIRFLOW__API__BASE_URL=http://airflow-api-server:8080
+AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-api-server:8080/execution/
+
+2) Critical: remove per-service environment: overrides
+
+In your compose, services like airflow-worker (and any others) that define environment: can override inherited env maps. Even if you use env_file, I want your runtime to be deterministic.
+
+So:
+
+Move DUMB_INIT_SETSID=0 into .env
+
+Remove the environment: block from airflow-worker (and any others that override)
+
+3) Restart the stack
+podman-compose down
+podman-compose up -d
+
+Verify from inside the scheduler (since LocalExecutor runs there)
+podman exec -it airflow-scheduler bash -lc '
+echo "== BASE/EXEC ==";
+env | egrep -i "AIRFLOW__API__BASE_URL|AIRFLOW__CORE__EXECUTION_API_SERVER_URL" || true;
+
+echo "== DNS ==";
+getent hosts airflow-api-server || true;
+
+echo "== Health ==";
+curl -sS -o /dev/null -w "%{http_code}\n" http://airflow-api-server:8080/health || true;
+
+python - <<PY
+import socket
+print("localhost:", socket.getaddrinfo("localhost", 8080))
+print("airflow-api-server:", socket.getaddrinfo("airflow-api-server", 8080))
+PY
+'
+
+
+If /health returns 200, the ConnectError should disappear.
+
+If /health still fails: your external network likely isn’t giving name resolution
+
+Because you use external: true network (airflow-pasta-net), sometimes DNS/aliasing behaves differently.
+
+Quick check:
+
+podman exec -it airflow-scheduler bash -lc "ping -c1 airflow-api-server || true; getent hosts airflow-api-server || true"
+
+If name doesn’t resolve
+
+Hard-pin the API server to its static IPv4 (you’re already doing this for postgres/redis).
+Give the API server a fixed IP too:
+
+airflow-api-server:
+  networks:
+    airflow-pasta-net:
+      ipv4_address: 10.89.0.20
+
+
+Then set in .env:
+
+AIRFLOW__API__BASE_URL=http://10.89.0.20:8080
+AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://10.89.0.20:8080/execution/
+
+
+Restart again.
+
+Optional hardening: disable IPv6 inside Airflow containers
+
+Add under x-airflow-common (if allowed in your environment):
+
+sysctls:
+  net.ipv6.conf.all.disable_ipv6: "1"
+  net.ipv6.conf.default.disable_ipv6: "1"
+
+About the “state mismatch / queued vs failed”
+
+That’s a side-effect of the supervisor getting SIGKILL after failing to call the Execution API (it retries, then dies). Once connectivity is fixed, that mismatch should go away.
+
+Do this next (fastest path)
+
+Add the two AIRFLOW__API__BASE_URL / EXECUTION_API vars to .env
+
+Restart
+
+Run the scheduler validation snippet above
+
+Paste me the output of:
+
+podman exec -it airflow-scheduler env | egrep -i "AIRFLOW__API__BASE_URL|EXECUTION_API"
+podman exec -it airflow-scheduler bash -lc "getent hosts airflow-api-server; curl -sS -o /dev/null -w '%{http_code}\n' http://airflow-api-server:8080/health"
+
+
+and I’ll tell you exactly whether it’s DNS vs IPv6 vs wrong URL.
+
+
+
+
 httpcore.ConnectError: [Errno 97] Address family not supported by protocol
 
 The above exception was the direct cause of the following exception:
