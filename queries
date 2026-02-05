@@ -105,6 +105,9 @@ podman-compose up -d
 If after temporary fix the error changes to something else (very likely), paste the new traceback — that means we passed the network layer and reached the tmux operator itself 👍
 
 
+[(<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.51', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.51', 8080))]
+
+
 Traceback (most recent call last):
   File "/home/airflow/.local/lib/python3.12/site-packages/celery/app/trace.py", line 479, in trace_task
     R = retval = fun(*args, **kwargs)
