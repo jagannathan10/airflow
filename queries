@@ -6,6 +6,105 @@ AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres:5432/ai
 AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
 
 
+Step-1 — Exec into the worker container
+podman exec -it airflow-worker bash
+
+🔧 Step-2 — Export the required variables (temporary)
+
+Inside container:
+
+export AIRFLOW__API__BASE_URL=http://airflow-api-server:8080
+export AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-api-server:8080/execution/
+
+
+Confirm:
+
+env | grep EXECUTION_API
+
+🔧 Step-3 — Restart ONLY the celery worker process (no container restart)
+
+Find PID:
+
+ps -ef | grep "celery worker"
+
+
+Kill it:
+
+pkill -f "celery worker"
+
+
+Supervisor (dumb-init) will automatically start a new worker using the new env.
+
+Watch logs:
+
+tail -f /opt/airflow/logs/*/*/*.log
+
+🔧 Step-4 — Also reload scheduler (important)
+
+Open another terminal:
+
+podman exec -it airflow-scheduler bash
+
+
+Then:
+
+export AIRFLOW__API__BASE_URL=http://airflow-api-server:8080
+export AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-api-server:8080/execution/
+pkill -f "airflow scheduler"
+
+🔧 Step-5 — Verify connectivity (most important)
+
+From worker:
+
+curl http://airflow-api-server:8080/health
+
+
+Expected:
+
+{"metadatabase":{"status":"healthy"}...}
+
+
+And check DNS resolution (this proves IPv4 usage):
+
+python - <<PY
+import socket
+print(socket.getaddrinfo("airflow-api-server",8080))
+PY
+
+
+You should see AF_INET (IPv4), NOT AF_INET6.
+
+🔧 Step-6 — Re-run the DAG
+
+Trigger again from UI.
+
+Your previous error:
+
+httpx.ConnectError: [Errno 97] Address family not supported by protocol
+
+
+should disappear.
+
+⚠️ IMPORTANT — Make it permanent after confirming
+
+Once it works, DO NOT keep doing manual exports.
+
+Add to /apps/airflow/.env
+
+AIRFLOW__API__BASE_URL=http://airflow-api-server:8080
+AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-api-server:8080/execution/
+DUMB_INIT_SETSID=0
+
+
+Then restart stack properly:
+
+podman-compose down
+podman-compose up -d
+
+
+If after temporary fix the error changes to something else (very likely), paste the new traceback — that means we passed the network layer and reached the tmux operator itself 👍
+
+
 Traceback (most recent call last):
   File "/home/airflow/.local/lib/python3.12/site-packages/celery/app/trace.py", line 479, in trace_task
     R = retval = fun(*args, **kwargs)
