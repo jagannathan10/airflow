@@ -1,3 +1,6 @@
+podman exec -it airflow-worker env | sort | egrep -i "AIRFLOW__API__BASE_URL|EXECUTION_API|SQL_ALCHEMY_CONN|BROKER_URL|RESULT_BACKEND"
+
+
 Traceback (most recent call last):
   File "/home/airflow/.local/lib/python3.12/site-packages/celery/app/trace.py", line 479, in trace_task
     R = retval = fun(*args, **kwargs)
