@@ -1,3 +1,14 @@
+== BASE/EXEC ==
+== DNS ==
+10.89.0.11      airflow-api-server.dns.podman
+10.89.0.11      airflow-api-server.dns.podman
+10.89.0.11      airflow-api-server.dns.podman
+== Health ==
+404
+localhost: [(<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('127.0.0.1', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('127.0.0.1', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('127.0.0.1', 8080)), (<AddressFamily.AF_INET6: 10>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('::1', 8080, 0, 0)), (<AddressFamily.AF_INET6: 10>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('::1', 8080, 0, 0)), (<AddressFamily.AF_INET6: 10>, <SocketKind.SOCK_RAW: 3>, 0, '', ('::1', 8080, 0, 0))]
+airflow-api-server: [(<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('10.89.0.11', 8080)), (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_RAW: 3>, 0, '', ('10.89.0.11', 8080))]
+
+
 Switching to LocalExecutor doesn’t avoid this in Airflow 3.1.x — the supervisor still calls the Execution API (task-instances/{id}/run). Your stacktrace shows the same path (airflow.sdk.api.client → httpx), so it’s still Airflow process → API server URL resolving to IPv6 / unsupported AF.
 
 Right now your scheduler (LocalExecutor worker process) is trying to reach the API on an address like localhost/::1 or some hostname that resolves to IPv6 first, and the container/network doesn’t support IPv6 → Errno 97.
