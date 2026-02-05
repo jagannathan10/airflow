@@ -1,3 +1,89 @@
+httpcore.ConnectError: [Errno 97] Address family not supported by protocol
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/executors/local_executor.py", line 96, in _run_worker
+    _execute_work(log, workload)
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/executors/local_executor.py", line 124, in _execute_work
+    supervise(
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 1984, in supervise
+    process = ActivitySubprocess.start(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 955, in start
+    proc._on_child_started(ti=what, dag_rel_path=dag_rel_path, bundle_info=bundle_info)
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 966, in _on_child_started
+    ti_context = self.client.task_instances.start(ti.id, self.pid, start_date)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/sdk/api/client.py", line 215, in start
+    resp = self.client.patch(f"task-instances/{id}/run", content=body.model_dump_json())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 1218, in patch
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 378, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/python/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/python/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/airflow/.local/lib/python3.12/site-packages/tenacity/__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/airflow/sdk/api/client.py", line 887, in request
+    return super().request(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/python/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/airflow/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 97] Address family not supported by protocol
+2026-02-05T15:46:24.471061Z [info     ] Marking task as FAILED. dag_id=sample_dag, task_id=SCRIPT_EXEC_TASK_NGINXADM, run_id=manual__2026-02-05T15:45:59.281473+00:00, logical_date=20260205T154557, start_date=, end_date=20260205T154624 [airflow.models.taskinstance] loc=taskinstance.py:1617
+2026-02-05T15:46:11.542941Z [warning  ] Starting call to 'airflow.sdk.api.client.Client.request', this is the 1st time calling it. [airflow.sdk.api.client] loc=before.py:42
+2026-02-05T15:46:12.551557Z [warning  ] Starting call to 'airflow.sdk.api.client.Client.request', this is the 2nd time calling it. [airflow.sdk.api.client] loc=before.py:42
+2026-02-05T15:46:13.943315Z [warning  ] Starting call to 'airflow.sdk.api.client.Client.request', this is the 3rd time calling it. [airflow.sdk.api.client] loc=before.py:42
+2026-02-05T15:46:15.827017Z [warning  ] Starting call to 'airflow.sdk.api.client.Client.request', this is the 4th time calling it. [airflow.sdk.api.client] loc=before.py:42
+2026-02-05T15:46:23.527262Z [info     ] Process exited                 [supervisor] exit_code=<Negsignal.SIGKILL: -9> loc=supervisor.py:710 pid=50 signal_sent=SIGKILL
+2026-02-05T15:46:24.438756Z [info     ] Received executor event with state failed for task instance TaskInstanceKey(dag_id='sample_dag', task_id='SCRIPT_EXEC_TASK_NGINXADM', run_id='manual__2026-02-05T15:45:59.281473+00:00', try_number=1, map_index=-1) [airflow.jobs.scheduler_job_runner.SchedulerJobRunner] loc=scheduler_job_runner.py:822
+2026-02-05T15:46:24.464467Z [info     ] TaskInstance Finished: dag_id=sample_dag, task_id=SCRIPT_EXEC_TASK_NGINXADM, run_id=manual__2026-02-05T15:45:59.281473+00:00, map_index=-1, run_start_date=None, run_end_date=None, run_duration=None, state=queued, executor=LocalExecutor(parallelism=32), executor_state=failed, try_number=1, max_tries=0, pool=default_pool, queue=default, priority_weight=1, operator=AgentTmuxUnifiedOperator, queued_dttm=2026-02-05 15:46:11.419687+00:00, scheduled_dttm=2026-02-05 15:46:11.389808+00:00,queued_by_job_id=4, pid=None [airflow.jobs.scheduler_job_runner.SchedulerJobRunner] loc=scheduler_job_runner.py:868
+2026-02-05T15:46:24.467102Z [error    ] Executor LocalExecutor(parallelism=32) reported that the task instance <TaskInstance: sample_dag.SCRIPT_EXEC_TASK_NGINXADM manual__2026-02-05T15:45:59.281473+00:00 [queued]> finished with state failed, but the task instance's state attribute is queued. Learn more: https://airflow.apache.org/docs/apache-airflow/stable/troubleshooting.html#task-state-changed-externally [airflow.task] loc=taskinstance.py:1527
+2026-02-05T15:46:25.506466Z [info     ] Marking run <DagRun sample_dag @ 2026-02-05 15:45:57+00:00: manual__2026-02-05T15:45:59.281473+00:00, state:running, queued_at: 2026-02-05 15:45:59.290640+00:00. run_type: manual> failed [airflow.models.dagrun.DagRun] loc=dagrun.py:1171
+2026-02-05T15:46:25.507628Z [info     ] DagRun Finished: dag_id=sample_dag, logical_date=2026-02-05 15:45:57+00:00, run_id=manual__2026-02-05T15:45:59.281473+00:00, run_start_date=2026-02-05 15:46:11.345544+00:00, run_end_date=2026-02-05 15:46:25.507519+00:00, run_duration=14.161975, state=failed, run_type=manual, data_interval_start=2026-02-05 15:45:57+00:00, data_interval_end=2026-02-05 15:45:57+00:00, [airflow.models.dagrun.DagRun] loc=dagrun.py:1274
+
+
+
 podman exec -it airflow-worker env | sort | egrep -i "AIRFLOW__API__BASE_URL|EXECUTION_API|SQL_ALCHEMY_CONN|BROKER_URL|RESULT_BACKEND"
 
 $ podman exec -it airflow-worker env | sort | egrep -i "AIRFLOW__API__BASE_URL|EXECUTION_API|SQL_ALCHEMY_CONN|BROKER_URL|RESULT_BACKEND"
