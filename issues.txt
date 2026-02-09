@@ -1,3 +1,55 @@
+import re
+from datetime import timedelta
+from airflow.utils import timezone
+
+def _parse_yyyymmdd(s: str):
+    """Accept YYYYMMDD or YYYY-MM-DD"""
+    s = s.strip()
+    if "-" in s:
+        return timezone.datetime.strptime(s, "%Y-%m-%d")
+    return timezone.datetime.strptime(s, "%Y%m%d")
+
+
+def get_base_odate(context):
+    """
+    Default ODATE = logical_date
+    But allow manual override using dag_run.conf["odate"]
+    """
+    dr = context.get("dag_run")
+    conf = (dr.conf or {}) if dr else {}
+
+    override = conf.get("odate")
+    if override:
+        dt = _parse_yyyymmdd(str(override))
+        return timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+
+    ld = context.get("logical_date") or context.get("execution_date")
+    return timezone.coerce_datetime(ld)
+
+
+def calculate_effective_odate(context, mode="NONE", days=1, fmt="%Y%m%d"):
+    """
+    Returns the FINAL ODATE value after PREV/NEXT logic
+    """
+    base = get_base_odate(context)
+
+    mode = (mode or "NONE").upper()
+
+    if mode == "PREV":
+        base = base - timedelta(days=days)
+    elif mode == "NEXT":
+        base = base + timedelta(days=days)
+
+    return base.strftime(fmt)
+
+
+def build_windows_batch_command(batch_path: str, context, mode="NONE", days=1):
+    eff_odate = calculate_effective_odate(context, mode, days)
+    return rf'{batch_path} {eff_odate}'
+
+
+
+
 [2026-02-09 20:59:59] INFO - DAG bundles loaded: dags-folder, example_dags
 [2026-02-09 20:59:59] INFO - Filling up the DagBag from /apps/airflow/dags/test_windows_odate.py
 [2026-02-09 20:59:59] INFO - Task instance is in running state
