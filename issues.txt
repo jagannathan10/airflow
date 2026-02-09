@@ -1,3 +1,40 @@
+[2026-02-09 20:59:59] INFO - DAG bundles loaded: dags-folder, example_dags
+[2026-02-09 20:59:59] INFO - Filling up the DagBag from /apps/airflow/dags/test_windows_odate.py
+[2026-02-09 20:59:59] INFO - Task instance is in running state
+[2026-02-09 20:59:59] INFO -  Previous state of the Task instance: TaskInstanceState.QUEUED
+[2026-02-09 20:59:59] INFO - Current task name:windows_job_1
+[2026-02-09 20:59:59] INFO - Dag name:windows_jobs_odate
+[2026-02-09 20:59:59] WARNING - The `airflow.utils.timezone.datetime` attribute is deprecated. Please use `'airflow.sdk.timezone.datetime'`. category=DeprecatedImportWarning
+[2026-02-09 20:59:59] ERROR - Task failed with exception
+AttributeError: 'function' object has no attribute 'strptime'
+File "/apps/venvs/airflow-3.1.6/lib64/python3.12/site-packages/airflow/sdk/execution_time/task_runner.py", line 1004 in run
+
+File "/apps/venvs/airflow-3.1.6/lib64/python3.12/site-packages/airflow/sdk/execution_time/task_runner.py", line 1405 in _execute_task
+
+File "/apps/venvs/airflow-3.1.6/lib64/python3.12/site-packages/airflow/sdk/bases/operator.py", line 417 in wrapper
+
+File "/apps/airflow/plugins/agent_windows_cmd_adapter.py", line 31 in execute
+
+File "/apps/airflow/dags/test_windows_odate.py", line 10 in cmd_builder
+
+File "/apps/airflow/plugins/controlm_odate.py", line 47 in build_windows_batch_command
+
+File "/apps/airflow/plugins/controlm_odate.py", line 34 in calculate_effective_odate
+
+File "/apps/airflow/plugins/controlm_odate.py", line 23 in get_base_odate
+
+File "/apps/airflow/plugins/controlm_odate.py", line 10 in _parse_yyyymmdd
+
+[2026-02-09 20:59:59] INFO - Task instance in failure state
+[2026-02-09 20:59:59] INFO - Task start
+[2026-02-09 20:59:59] INFO - Task:<Task(AgentWindowsResolvedCommandOperator): windows_job_1>
+[2026-02-09 20:59:59] INFO - Failure caused by 'function' object has no attribute 'strptime'
+
+
+
+
+
+
 [2026-02-09 20:42:21] INFO - DAG bundles loaded: dags-folder, example_dags
 [2026-02-09 20:42:21] INFO - Filling up the DagBag from /apps/airflow/dags/test_windows_odate.py
 [2026-02-09 20:42:21] WARNING - The `airflow.decorators.task` attribute is deprecated. Please use `'airflow.sdk.task'`. category=DeprecatedImportWarning
