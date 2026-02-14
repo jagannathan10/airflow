@@ -1,0 +1,31 @@
+Below are fully updated versions of both operators (Windows + Linux TMUX) with the missing “Control-M style reattach” semantics:
+
+✅ Reattach after worker pod restart / retry (no duplicate remote session)
+✅ Adopt result if remote job already finished (mark success/failed)
+✅ Keep your cross-run serialization via dedup_key (queue behind another active job if needed)
+✅ Add map_index into job_id to avoid collisions with mapped tasks
+
+These updates are based on your current files 
+
+windowsagentoperator
+
+ 
+
+agent_tmux_unified_new
+
+.Below are fully updated versions of both operators (Windows + Linux TMUX) with the missing “Control-M style reattach” semantics:
+
+✅ Reattach after worker pod restart / retry (no duplicate remote session)
+✅ Adopt result if remote job already finished (mark success/failed)
+✅ Keep your cross-run serialization via dedup_key (queue behind another active job if needed)
+✅ Add map_index into job_id to avoid collisions with mapped tasks
+
+These updates are based on your current files 
+
+windowsagentoperator
+
+ 
+
+agent_tmux_unified_new
+
+.
