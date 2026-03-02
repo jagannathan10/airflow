@@ -1,0 +1,119 @@
+from airflow import DAG
+from datetime import datetime, timedelta
+from utils.agent_tmux_unified import AgentTmuxUnifiedOperator
+from utils.common_utils import get_micro_spec
+from airflow.sensors.external_task import ExternalTaskSensor
+
+with DAG(
+    dag_id="GNS_RT_FSK_LISTREFRESH_BATCH__DAG-2",
+    schedule="30 0 * * *",
+    start_date=datetime(2025, 1, 1),
+    catchup=False,
+    default_args={
+        'retries': 0,
+        'retry_delay': timedelta(minutes=5),
+        'queue': 'kubernetes',
+        'executor_config': get_micro_spec(),
+        'is_delete_operator_pod': True,
+    },
+    tags=['50262', 'GLOBAL_NAME_SCREENING_GNS', 'GNS_RT_FSK_PRIMARY_BATCH'],
+) as dag:
+
+    # ACTIVE servers (same as LISTREFRESH_BATCH__DAG_1)
+    GNS_RT_FSK_AM_LR_ACTIVE_doc_content = """
+        - **Description**: GNS RT FSK EXT_AM LIST REFRESH JOB CONFIGURED FOR ACTIVE HK & SG SERVERS
+        - **Type**: Job:Script
+        - **Host**: multiple
+        - **RunAs**: gnsrtusr
+        - **Priority**: <NOT_DEFINED>
+        - **DaysKeepActive**: <NOT_DEFINED>
+    """
+    active_target_servers = [
+        "10.247.179.143:18443",
+        "10.247.179.158:18443",
+        "10.247.179.142:18443",
+        "10.247.179.144:18443",
+        "10.247.179.149:18443",
+        "10.247.179.135:18443",
+        "10.247.179.162:18443",
+        "10.247.179.152:18443",
+        "10.247.179.141:18443"
+    ]
+    active_tasks = []
+    active_counter = 1
+    for server in active_target_servers:
+        task = AgentTmuxUnifiedOperator(
+            task_id=f"GNS_RT_FSK_AM_LR_ACTIVE_{active_counter}",
+            command="sh /app/gns_rt/FSK/BIN/GNS_RT_FSK_EXT_AM_LISTREFRESH",
+            target_server=server,
+            job_user="gnsrtusr",
+            priority_weight=1,
+        )
+        task.doc_md = GNS_RT_FSK_AM_LR_ACTIVE_doc_content + f"\n- **Target Server**: {server}"
+        active_tasks.append(task)
+        active_counter += 1
+
+    # DR servers (same as LISTREFRESH_BATCH__DAG_1)
+    GNS_RT_FSK_AM_LR_DR_doc_content = """
+        - **Description**: GNS RT FSK EXT_AM LIST REFRESH JOB CONFIGURED FOR DR HK & SG SERVERS
+        - **Type**: Job:Script
+        - **Host**: multiple
+        - **RunAs**: gnsrtusr
+        - **Priority**: <NOT_DEFINED>
+        - **DaysKeepActive**: 1
+    """
+    dr_target_servers = [
+        "10.247.179.134:18443",
+        "10.247.179.159:18443",
+        "10.247.179.138:18443",
+        "10.247.179.163:18443",
+        "10.247.179.154:18443",
+        "10.247.179.136:18443",
+        "10.247.179.137:18443",
+        "10.247.179.151:18443",
+        "10.247.179.156:18443",
+        "10.247.179.160:18443"
+    ]
+    dr_tasks = []
+    dr_counter = 1
+    for server in dr_target_servers:
+        task = AgentTmuxUnifiedOperator(
+            task_id=f"GNS_RT_FSK_AM_LR_DR_{dr_counter}",
+            command="sh /app/gns_rt/FSK/BIN/GNS_RT_FSK_EXT_AM_LISTREFRESH",
+            target_server=server,
+            job_user="gnsrtusr",
+            priority_weight=1,
+        )
+        task.doc_md = GNS_RT_FSK_AM_LR_DR_doc_content + f"\n- **Target Server**: {server}"
+        dr_tasks.append(task)
+        dr_counter += 1
+
+    # Wait for all upstream tasks from GNS_RT_FSK_FILETEST_BATCH__DAG_3
+    # Dynamically determine the number of upstream tasks by duplicating the external DAG's target_servers list here
+    filetest_batch_target_servers = [
+        "10.247.179.143:18443",
+        "10.247.179.134:18443"
+    ]
+    upstream_task_ids = [
+        f"GNS_RT_FSK_EXT_AM_FT_01_{i+1}" for i in range(len(filetest_batch_target_servers))
+    ]
+    wait_sensors = []
+    for utid in upstream_task_ids:
+        sensor = ExternalTaskSensor(
+            task_id=f"wait_for__GNS_RT_FSK_FILETEST_BATCH__DAG-3__{utid}",
+            external_dag_id="GNS_RT_FSK_FILETEST_BATCH__DAG-3",
+            external_task_id=utid,
+            mode='reschedule',
+            poke_interval=60,
+            execution_delta=timedelta(minutes=0),
+            dag=dag
+        )
+        wait_sensors.append(sensor)
+
+    # Set dependencies: all wait_sensors >> all active_tasks >> all dr_tasks
+    for sensor in wait_sensors:
+        for active_task in active_tasks:
+            sensor >> active_task
+    for active_task in active_tasks:
+        for dr_task in dr_tasks:
+            active_task >> dr_task
