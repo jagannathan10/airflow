@@ -1,3 +1,17 @@
+# Single file transfer with timing breakdown
+curl -v \
+  --output /dev/null \
+  --upload-file /tmp/test_1GB.bin \
+  --write-out "\n--- Transfer Stats ---\n
+  DNS lookup:        %{time_namelookup}s
+  TCP connect:       %{time_connect}s
+  TLS handshake:     %{time_appconnect}s
+  First byte sent:   %{time_pretransfer}s
+  Total time:        %{time_total}s
+  Upload speed:      %{speed_upload} bytes/sec
+  Upload size:       %{size_upload} bytes\n" \
+  https://transfer.yourcompany.com/upload/test_1GB.bin
+
 curl -ik -T /tmp/test1 "https://api.sc.com/6d33bfbe-9bd2-40e6-b2dd-40cc6260d4c1/test1"
 curl: (6) Could not resolve host: api.sc.com
 
