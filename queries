@@ -1,3 +1,6 @@
+curl -ik -T /tmp/test1 "https://api.sc.com/6d33bfbe-9bd2-40e6-b2dd-40cc6260d4c1/test1"
+curl: (6) Could not resolve host: api.sc.com
+
 == BASE/EXEC ==
 == DNS ==
 10.89.0.11      airflow-api-server.dns.podman
