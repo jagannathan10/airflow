@@ -1,1 +1,0 @@
-With Windows embedded 
