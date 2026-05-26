@@ -1,3 +1,30 @@
+airflowadm@hkiq4w6jo8n2b04[task_id=ENT_SG_FRDPTXP_FW] $ curl -v --max-time 5 http://10.95.128.101:8793/log/logs/dag_id=36990_ENT_SG_FRDPTXP_DAG/run_id=manual__2026-05-26T10:05:01.281627+00:00/task_id=ENT_SG_FRDPTXP_FW/attempt=1.log
+*   Trying 10.95.128.101:8793...
+* Connected to 10.95.128.101 (10.95.128.101) port 8793 (#0)
+> GET /log/logs/dag_id=36990_ENT_SG_FRDPTXP_DAG/run_id=manual__2026-05-26T10:05:01.281627+00:00/task_id=ENT_SG_FRDPTXP_FW/attempt=1.log HTTP/1.1
+> Host: 10.95.128.101:8793
+> User-Agent: curl/7.76.1
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 403 Forbidden
+< date: Tue, 26 May 2026 12:39:51 GMT
+< server: uvicorn
+< content-length: 41
+< content-type: application/json
+< 
+* Connection #0 to host 10.95.128.101 left intact
+{"detail":"Authorization header missing"}airflowadm@hkiq4w6jo8n2b04[task_id=ENT_SG_FRDPTXP_FW] $ pwd
+/apps/airflow/logs/dag_id=36990_ENT_SG_FRDPTXP_DAG/run_id=manual__2026-05-26T10:05:01.281627+00:00/task_id=ENT_SG_FRDPTXP_FW
+airflowadm@hkiq4w6jo8n2b04[task_id=ENT_SG_FRDPTXP_FW] $ ls -lrt
+total 64
+-rw-r--r--. 1 airflowadm airflowadm 64325 May 26 18:16 'attempt=1.log'
+airflowadm@hkiq4w6jo8n2b04[task_id=ENT_SG_FRDPTXP_FW] $ pwd
+/apps/airflow/logs/dag_id=36990_ENT_SG_FRDPTXP_DAG/run_id=manual__2026-05-26T10:05:01.281627+00:00/task_id=ENT_SG_FRDPTXP_FW
+airflowadm@hkiq4w6jo8n2b04[task_id=ENT_SG_FRDPTXP_FW] $ 
+
+
+
 2026-05-25T09:23:29.464948Z [info     ] 81 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
 2026-05-25T09:23:29.465171Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
 2026-05-25T09:24:30.355103Z [info     ] 85 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
