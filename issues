@@ -1,0 +1,141 @@
+2026-05-25T09:23:29.464948Z [info     ] 81 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:23:29.465171Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:24:30.355103Z [info     ] 85 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:24:30.355329Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:25:31.121154Z [info     ] 79 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:25:31.121361Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:26:31.486118Z [info     ] 83 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:26:31.486348Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:27:31.622702Z [info     ] 79 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:27:31.622930Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:28:31.716331Z [info     ] 79 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:28:31.716599Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:29:32.015436Z [info     ] 83 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:29:32.015762Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:30:32.473381Z [info     ] 82 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:30:32.473688Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:31:32.655388Z [info     ] 86 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:31:32.655635Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:32:33.057729Z [info     ] 82 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:32:33.057956Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:33:33.158204Z [info     ] 86 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:33:33.158447Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:34:33.923869Z [info     ] 85 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:34:33.924064Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:35:34.374785Z [info     ] 89 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:35:34.375001Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:36:34.645293Z [info     ] 89 triggers currently running  [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:36:34.645634Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-25T09:37:00.148769Z [error    ] Trigger 20828__FME_FMODS_DWN__2/scheduled__2026-05-25T07:30:00+00:00/wait_for__20828__FME_COM_MXCMS__15__FME_MXCMSVAL_TINS/-1/1 (ID 2612) exited with error Response read out of order! Got frame.id=17192, expect_id=17193 [airflow.jobs.triggerer_job_runner] error_detail=[{'exc_type': 'RuntimeError', 'exc_value': 'Response read out of order! Got frame.id=17192, expect_id=17193', 'exc_notes': [], 'syntax_error': None, 'is_cause': False, 'frames': [{'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1071, 'name': 'cleanup_finished_triggers'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 119, 'name': 'greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 208, 'name': '_greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 84, 'name': 'trampoline'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/outcome/_impl.py', 'lineno': 185, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1218, 'name': 'run_trigger'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 125, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 138, 'name': '_get_count_af_3'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 506, 'name': '__call__'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 217, 'name': '_greenback_shim'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/thread.py', 'lineno': 59, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 561, 'name': 'thread_handler'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/sdk/execution_time/task_runner.py', 'lineno': 592, 'name': 'get_ti_count'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 831, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 325, 'name': '__call__'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 449, 'name': 'result'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 401, 'name': '__get_result'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 365, 'name': 'main_wrap'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 860, 'name': 'asend'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 850, 'name': '_aget_response'}], 'is_group': False, 'exceptions': []}] loc=triggerer_job_runner.py:796
+2026-05-25T09:37:00.149102Z [error    ] Trigger exited without sending an event. Dependent tasks will be failed. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796 name='20828__FME_FMODS_DWN__2/scheduled__2026-05-25T07:30:00+00:00/wait_for__20828__FME_COM_MXCMS__15__FME_MXCMSVAL_TINS/-1/1 (ID 2612)'
+--- Supervised process Last chance exception handler ---
+Traceback (most recent call last):
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 415, in _fork_main
+    target()
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 800, in run_in_process
+    TriggerRunner().run()
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 919, in run
+    asyncio.run(self.arun())
+  File "/usr/lib64/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 944, in arun
+    await self.sync_state_to_supervisor(finished_ids)
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 1155, in sync_state_to_supervisor
+    resp = await self.asend(msg)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 1166, in asend
+    response = await self.comms_decoder.asend(msg)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 860, in asend
+    return await self._aget_response(frame.id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 850, in _aget_response
+    raise RuntimeError(f"Response read out of order! Got {frame.id=}, {expect_id=}")
+RuntimeError: Response read out of order! Got frame.id=17210, expect_id=17211
+2026-05-25T09:37:00.149235Z [error    ] Trigger 20828__FME_FMODS_DWN__2/scheduled__2026-05-25T07:30:00+00:00/wait_for__20828__FME_COM_MXCMS__4__FME_MXCMSVAL_CBAL/-1/1 (ID 2613) exited with error Response read out of order! Got frame.id=17195, expect_id=17196 [airflow.jobs.triggerer_job_runner] error_detail=[{'exc_type': 'RuntimeError', 'exc_value': 'Response read out of order! Got frame.id=17195, expect_id=17196', 'exc_notes': [], 'syntax_error': None, 'is_cause': False, 'frames': [{'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1071, 'name': 'cleanup_finished_triggers'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 119, 'name': 'greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 208, 'name': '_greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 84, 'name': 'trampoline'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/outcome/_impl.py', 'lineno': 185, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1218, 'name': 'run_trigger'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 125, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 138, 'name': '_get_count_af_3'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 506, 'name': '__call__'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 217, 'name': '_greenback_shim'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/thread.py', 'lineno': 59, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 561, 'name': 'thread_handler'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/sdk/execution_time/task_runner.py', 'lineno': 592, 'name': 'get_ti_count'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 831, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 325, 'name': '__call__'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 449, 'name': 'result'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 401, 'name': '__get_result'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 365, 'name': 'main_wrap'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 860, 'name': 'asend'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 850, 'name': '_aget_response'}], 'is_group': False, 'exceptions': []}] loc=triggerer_job_runner.py:796
+2026-05-25T09:37:00.149485Z [error    ] Trigger exited without sending an event. Dependent tasks will be failed. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796 name='20828__FME_FMODS_DWN__2/scheduled__2026-05-25T07:30:00+00:00/wait_for__20828__FME_COM_MXCMS__4__FME_MXCMSVAL_CBAL/-1/1 (ID 2613)'
+2026-05-25T09:37:00.501110Z [warning  ] Process exited abnormally      [airflow.jobs.triggerer_job_runner] exit_code=126 loc=supervisor.py:853
+2026-05-25T09:37:00.509361Z [error    ] Trigger runner process has died! Exiting. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:587
+2026-05-25T09:37:00.509577Z [info     ] Waiting for triggers to clean up [airflow.jobs.triggerer_job_runner.TriggererJobRunner] loc=triggerer_job_runner.py:221
+2026-05-25T09:37:00.509805Z [info     ] Exited trigger loop            [airflow.jobs.triggerer_job_runner.TriggererJobRunner] loc=triggerer_job_runner.py:226
+2026-05-25T09:37:00.588569Z [info     ] Shutting down                  [uvicorn.error] loc=server.py:272
+2026-05-25T09:37:00.689653Z [info     ] Waiting for application shutdown. [uvicorn.error] loc=on.py:67
+2026-05-25T09:37:00.690121Z [info     ] Application shutdown complete. [uvicorn.error] loc=on.py:76
+2026-05-25T09:37:00.690323Z [info     ] Finished server process [3422062] [uvicorn.error] loc=server.py:102
+
+
+
+
+
+2026-05-26T05:12:49.500326Z [info     ] 124 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:12:49.500413Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:13:49.829391Z [info     ] 123 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:13:49.829472Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:14:49.962257Z [info     ] 123 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:14:49.962360Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:15:50.259838Z [info     ] 120 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:15:50.259898Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:16:50.598076Z [info     ] 120 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:16:50.598138Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:17:50.853313Z [info     ] 122 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:17:50.853369Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:18:51.000035Z [info     ] 121 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:18:51.000084Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:19:51.264222Z [info     ] 120 triggers currently running [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+2026-05-26T05:19:51.264303Z [info     ] 0 watchers currently running   [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796
+--- Supervised process Last chance exception handler ---
+Traceback (most recent call last):
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 415, in _fork_main
+    target()
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 800, in run_in_process
+    TriggerRunner().run()
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 919, in run
+    asyncio.run(self.arun())
+  File "/usr/lib64/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 944, in arun
+    await self.sync_state_to_supervisor(finished_ids)
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 1155, in sync_state_to_supervisor
+    resp = await self.asend(msg)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 1166, in asend
+    response = await self.comms_decoder.asend(msg)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 860, in asend
+    return await self._aget_response(frame.id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py", line 850, in _aget_response
+    raise RuntimeError(f"Response read out of order! Got {frame.id=}, {expect_id=}")
+RuntimeError: Response read out of order! Got frame.id=264753, expect_id=264754
+2026-05-26T05:20:23.943087Z [error    ] Trigger exited without sending an event. Dependent tasks will be failed. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796 name='50544__TDM_DT_FILE_LOAD__1/scheduled__2026-05-26T03:53:35.595445+00:00/wait_for__50544__TDM_DT_FILE_LOAD__3__TDM_PAPM_SOD/-1/1 (ID 5825)'
+2026-05-26T05:20:23.943130Z [error    ] Trigger 51412__CAP_GLOBAL_BIM__2/scheduled__2026-05-26T04:13:14.120981+00:00/wait_for__51412__CAP_GLOBAL_BIM__1__CAP_AE_SMDeltaFileGen/-1/1 (ID 5835) exited with error Response read out of order! Got frame.id=264730, expect_id=264731 [airflow.jobs.triggerer_job_runner] error_detail=[{'exc_type': 'RuntimeError', 'exc_value': 'Response read out of order! Got frame.id=264730, expect_id=264731', 'exc_notes': [], 'syntax_error': None, 'is_cause': False, 'frames': [{'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1071, 'name': 'cleanup_finished_triggers'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 119, 'name': 'greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 208, 'name': '_greenback_shim'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 84, 'name': 'trampoline'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/outcome/_impl.py', 'lineno': 185, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 1218, 'name': 'run_trigger'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 115, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/providers/standard/triggers/external_task.py', 'lineno': 138, 'name': '_get_count_af_3'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 506, 'name': '__call__'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/greenback/_impl.py', 'lineno': 217, 'name': '_greenback_shim'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/thread.py', 'lineno': 59, 'name': 'run'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 561, 'name': 'thread_handler'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/sdk/execution_time/task_runner.py', 'lineno': 592, 'name': 'get_ti_count'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 831, 'name': 'send'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 325, 'name': '__call__'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 449, 'name': 'result'}, {'filename': '/usr/lib64/python3.12/concurrent/futures/_base.py', 'lineno': 401, 'name': '__get_result'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/asgiref/sync.py', 'lineno': 365, 'name': 'main_wrap'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 860, 'name': 'asend'}, {'filename': '/apps/airflow/venv/lib64/python3.12/site-packages/airflow/jobs/triggerer_job_runner.py', 'lineno': 850, 'name': '_aget_response'}], 'is_group': False, 'exceptions': []}] loc=triggerer_job_runner.py:796
+2026-05-26T05:20:23.943233Z [error    ] Trigger exited without sending an event. Dependent tasks will be failed. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:796 name='51412__CAP_GLOBAL_BIM__2/scheduled__2026-05-26T04:13:14.120981+00:00/wait_for__51412__CAP_GLOBAL_BIM__1__CAP_AE_SMDeltaFileGen/-1/1 (ID 5835)'
+2026-05-26T05:20:24.383222Z [warning  ] Process exited abnormally      [airflow.jobs.triggerer_job_runner] exit_code=126 loc=supervisor.py:853
+2026-05-26T05:20:24.386542Z [error    ] Trigger runner process has died! Exiting. [airflow.jobs.triggerer_job_runner] loc=triggerer_job_runner.py:587
+2026-05-26T05:20:24.386696Z [info     ] Waiting for triggers to clean up [airflow.jobs.triggerer_job_runner.TriggererJobRunner] loc=triggerer_job_runner.py:221
+2026-05-26T05:20:24.386773Z [info     ] Exited trigger loop            [airflow.jobs.triggerer_job_runner.TriggererJobRunner] loc=triggerer_job_runner.py:226
+2026-05-26T05:20:24.447556Z [info     ] Shutting down                  [uvicorn.error] loc=server.py:272
+2026-05-26T05:20:24.548146Z [info     ] Waiting for application shutdown. [uvicorn.error] loc=on.py:67
+2026-05-26T05:20:24.548397Z [info     ] Application shutdown complete. [uvicorn.error] loc=on.py:76
+2026-05-26T05:20:24.548507Z [info     ] Finished server process [2788429] [uvicorn.error] loc=server.py:102
+2026-05-26T05:30:21.227539Z [info     ] setup plugin alembic.autogenerate.schemas [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.227777Z [info     ] setup plugin alembic.autogenerate.tables [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.227894Z [info     ] setup plugin alembic.autogenerate.types [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.228013Z [info     ] setup plugin alembic.autogenerate.constraints [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.228106Z [info     ] setup plugin alembic.autogenerate.defaults [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.228196Z [info     ] setup plugin alembic.autogenerate.comments [alembic.runtime.plugins] loc=plugins.py:37
+2026-05-26T05:30:21.353187Z [warning  ] Plugin 'editor_plugin' already registered, skipping [airflow.plugins_manager] loc=plugins_manager.py:102
